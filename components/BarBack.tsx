@@ -44,6 +44,28 @@ export default function BarBack() {
     return baseNeed(item) + (item.eventAddEnabled ? item.eventAdd : 0);
   }
 
+  const sortOptionsByView: Record<BarView, SortMode[]> = {
+    inventory: [
+      "Need to Order First",
+      "Needs Inventory Review",
+      "Lowest Current Inventory",
+      "Alphabetical",
+    ],
+    target: ["Alphabetical", "Lowest Current Inventory"],
+    pricing: ["Pricing Review First", "Highest Cost %", "Alphabetical"],
+    import: ["Alphabetical"],
+  };
+
+  const sortOptions = useMemo(() => {
+    return sortOptionsByView[activeView];
+  }, [activeView]);
+
+  useEffect(() => {
+    if (!sortOptions.includes(sortMode)) {
+      setSortMode(sortOptions[0]);
+    }
+  }, [activeView, sortMode, sortOptions]);
+
   const filteredItems = useMemo(() => {
     let results = items.filter((item) =>
       item.productName.toLowerCase().includes(search.toLowerCase())
@@ -90,10 +112,6 @@ export default function BarBack() {
   ).length;
 
   const itemsToOrderCount = items.filter((item) => finalOrder(item) > 0).length;
-
-  const estimatedOrderCost = items.reduce((sum, item) => {
-    return sum + finalOrder(item) * item.bottleCost;
-  }, 0);
 
   const pricingReviewCount = items.filter((item) =>
     needsPricingReview(item)
@@ -246,39 +264,6 @@ export default function BarBack() {
     "Cans/Bottles",
   ];
 
-  const sortOptionsByView: Record<BarView, SortMode[]> = {
-  inventory: [
-    "Need to Order First",
-    "Needs Inventory Review",
-    "Lowest Current Inventory",
-    "Alphabetical",
-  ],
-  target: [
-    "Alphabetical",
-    "Lowest Current Inventory",
-  ],
-  pricing: [
-    "Pricing Review First",
-    "Highest Cost %",
-    "Alphabetical",
-  ],
-  import: [
-    "Alphabetical",
-  ],
-};
-
-const sortOptions = sortOptionsByView[activeView];
-
-if (!sortOptions.includes(sortMode)) {
-  setSortMode(sortOptions[0]);
-
-}
-useEffect(() => {
-  if (!sortOptions.includes(sortMode)) {
-    setSortMode(sortOptions[0]);
-  }
-}, [activeView, sortMode, sortOptions]);
-
   return (
     <div className="max-w-6xl mx-auto p-4 md:p-6 space-y-6">
       <div>
@@ -430,16 +415,6 @@ useEffect(() => {
           existingItemCount={items.length}
           addImportedItems={addImportedItems}
         />
-      ) : null}
-
-      {activeView === "inventory" ? (
-        <div className="bg-white rounded-2xl shadow p-4 space-y-3">
-          <h2 className="text-xl font-bold">Order Summary</h2>
-          <p className="text-sm text-gray-600">
-            Includes normal inventory needs plus enabled one-time event adds.
-          </p>
-          <p className="text-3xl font-bold">${estimatedOrderCost.toFixed(2)}</p>
-        </div>
       ) : null}
     </div>
   );
