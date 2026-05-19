@@ -8,12 +8,14 @@ import KegCalculator from "../components/KegCalculator";
 import WineCalculator from "../components/WineCalculator";
 import PackagedCalculator from "../components/PackagedCalculator";
 import FoodCalculator from "../components/FoodCalculator";
+import BarBack from "@/components/BarBack";
 
 export default function Home() {
   const [activePage, setActivePage] = useState("home");
   const [calculatorType, setCalculatorType] = useState("liquor");
 
   function showCalculator(type: string) {
+    if (!type) return;
     setCalculatorType(type);
     setActivePage("calculators");
   }
@@ -35,9 +37,7 @@ export default function Home() {
             />
 
             <div className="text-left">
-              <p className="text-xl font-bold leading-tight">
-                Kitchen & Tap
-              </p>
+              <p className="text-xl font-bold leading-tight">Kitchen & Tap</p>
               <p className="text-xs text-gray-500">
                 Veteran-Owned Hospitality Tools
               </p>
@@ -68,34 +68,39 @@ export default function Home() {
             </button>
 
             <select
-  value={activePage === "calculators" ? calculatorType : ""}
-  onChange={(e) => showCalculator(e.target.value)}
-  className="px-3 py-2 rounded-lg border bg-white"
->
-  <option value="">
-    Select Calculator
-  </option>
+              value={activePage === "calculators" ? calculatorType : ""}
+              onChange={(e) => showCalculator(e.target.value)}
+              className="px-3 py-2 rounded-lg border bg-white"
+            >
+              <option value="">Select Calculator</option>
+              <option value="liquor">Liquor Calculator</option>
+              <option value="keg">Beer / Keg Calculator</option>
+              <option value="wine">Wine Calculator</option>
+              <option value="packaged">Cans / Bottles Calculator</option>
+              <option value="food">Food Calculator</option>
+            </select>
 
-  <option value="liquor">
-    Liquor Calculator
-  </option>
+            <button
+              onClick={() => setActivePage("barback")}
+              className={`px-3 py-2 rounded-lg ${
+                activePage === "barback"
+                  ? "bg-orange-100 text-orange-800"
+                  : "hover:bg-gray-100"
+              }`}
+            >
+              Bar Back 🔒
+            </button>
 
-  <option value="keg">
-    Beer / Keg Calculator
-  </option>
-
-  <option value="wine">
-    Wine Calculator
-  </option>
-
-  <option value="packaged">
-    Cans / Bottles Calculator
-  </option>
-
-  <option value="food">
-    Food Calculator
-  </option>
-</select>
+            <button
+              onClick={() => setActivePage("pantry")}
+              className={`px-3 py-2 rounded-lg ${
+                activePage === "pantry"
+                  ? "bg-orange-100 text-orange-800"
+                  : "hover:bg-gray-100"
+              }`}
+            >
+              Pantry 🔒
+            </button>
 
             <button
               onClick={() => setActivePage("disclaimers")}
@@ -172,8 +177,8 @@ export default function Home() {
             <div className="bg-white rounded-2xl shadow p-6">
               <h3 className="text-xl font-bold">Bar Tools</h3>
               <p className="mt-3 text-gray-600">
-                Liquor, draft beer, wine, and packaged beverage pricing
-                tools built for real-world bar operations.
+                Liquor, draft beer, wine, and packaged beverage pricing tools
+                built for real-world bar operations.
               </p>
             </div>
 
@@ -188,8 +193,8 @@ export default function Home() {
             <div className="bg-white rounded-2xl shadow p-6">
               <h3 className="text-xl font-bold">Pro Features Coming</h3>
               <p className="mt-3 text-gray-600">
-                Save items, update costs, build reports, manage Bar Back,
-                and track Pantry inventory.
+                Save items, update costs, build reports, manage Bar Back, and
+                track Pantry inventory.
               </p>
             </div>
           </div>
@@ -202,22 +207,21 @@ export default function Home() {
             <h1 className="text-4xl font-bold">About Kitchen & Tap</h1>
 
             <p className="text-gray-700 leading-7">
-              Kitchen & Tap is a veteran-owned hospitality pricing tool
-              built for bars, restaurants, clubs, American Legions, VFWs,
-              and small operators.
+              Kitchen & Tap is a veteran-owned hospitality pricing tool built
+              for bars, restaurants, clubs, American Legions, VFWs, and small
+              operators.
             </p>
 
             <p className="text-gray-700 leading-7">
-              The goal is simple: help operators understand their costs,
-              price menu items more confidently, and protect margins without
-              needing complicated enterprise software.
+              The goal is simple: help operators understand their costs, price
+              menu items more confidently, and protect margins without needing
+              complicated enterprise software.
             </p>
 
             <p className="text-gray-700 leading-7">
-              The free version gives operators fast manual calculators.
-              Future Pro versions will support saved products, Pantry
-              inventory, Bar Back tools, recipe costing, reporting, and
-              setup services.
+              The free version gives operators fast manual calculators. Future
+              Pro versions will support saved products, Pantry inventory, Bar
+              Back tools, recipe costing, reporting, and setup services.
             </p>
           </div>
         </section>
@@ -240,27 +244,53 @@ export default function Home() {
         </section>
       ) : null}
 
+      {activePage === "barback" ? <BarBack /> : null}
+
+      {activePage === "pantry" ? (
+        <section className="px-6 py-12">
+          <div className="max-w-5xl mx-auto space-y-6">
+            <div className="bg-white rounded-2xl shadow p-8">
+              <p className="text-sm font-semibold uppercase tracking-wide text-orange-700">
+                Restaurant Pro Feature
+              </p>
+
+              <h1 className="text-4xl font-bold mt-2">Pantry</h1>
+
+              <p className="text-gray-700 mt-4 leading-7">
+                Pantry will let restaurants save ingredient pricing, track
+                desired quantities versus current inventory, and connect
+                ingredient costs directly to recipes and menu pricing.
+              </p>
+
+              <div className="mt-6 inline-flex rounded-xl bg-orange-100 text-orange-800 px-4 py-2 font-semibold">
+                🔒 Coming Soon in Restaurant Pro
+              </div>
+            </div>
+          </div>
+        </section>
+      ) : null}
+
       {activePage === "disclaimers" ? (
         <section className="px-6 py-12">
           <div className="max-w-4xl mx-auto bg-white rounded-2xl shadow p-8 space-y-5">
             <h1 className="text-4xl font-bold">Disclaimers</h1>
 
             <p className="text-gray-700 leading-7">
-              Kitchen & Tap provides pricing and profitability estimates
-              based on information entered by the user.
+              Kitchen & Tap provides pricing and profitability estimates based
+              on information entered by the user.
             </p>
 
             <p className="text-gray-700 leading-7">
-              Results may vary depending on supplier pricing, taxes,
-              waste, portion sizes, pour sizes, labor practices, and
-              business operations.
+              Results may vary depending on supplier pricing, taxes, waste,
+              portion sizes, pour sizes, labor practices, and business
+              operations.
             </p>
 
             <p className="text-gray-700 leading-7">
-              Kitchen & Tap is not responsible for inaccurate results
-              caused by incorrect or incomplete data entry. Operators
-              should verify all pricing, tax, and cost information before
-              making final business decisions.
+              Kitchen & Tap is not responsible for inaccurate results caused by
+              incorrect or incomplete data entry. Operators should verify all
+              pricing, tax, and cost information before making final business
+              decisions.
             </p>
           </div>
         </section>
@@ -299,48 +329,44 @@ export default function Home() {
       ) : null}
 
       <footer className="px-6 py-10 bg-white border-t mt-10">
-  <div className="max-w-6xl mx-auto grid gap-6 md:grid-cols-3 text-sm text-gray-700">
-    <div>
-      <h3 className="font-bold text-lg text-gray-900">
-        Our Mission
-      </h3>
-      <p className="mt-2 leading-6">
-        Kitchen & Tap exists to help bars, restaurants, clubs, and small
-        hospitality operators price smarter, understand their costs, and
-        protect their margins with simple, practical tools.
-      </p>
-    </div>
+        <div className="max-w-6xl mx-auto grid gap-6 md:grid-cols-3 text-sm text-gray-700">
+          <div>
+            <h3 className="font-bold text-lg text-gray-900">Our Mission</h3>
+            <p className="mt-2 leading-6">
+              Kitchen & Tap exists to help bars, restaurants, clubs, and small
+              hospitality operators price smarter, understand their costs, and
+              protect their margins with simple, practical tools.
+            </p>
+          </div>
 
-    <div>
-      <h3 className="font-bold text-lg text-gray-900">
-        Beta Notes
-      </h3>
-      <p className="mt-2 leading-6">
-        Kitchen & Tap is currently in beta. We are actively testing the
-        calculators, improving the user experience, and gathering feedback
-        from real hospitality operators.
-      </p>
-    </div>
+          <div>
+            <h3 className="font-bold text-lg text-gray-900">Beta Notes</h3>
+            <p className="mt-2 leading-6">
+              Kitchen & Tap is currently in beta. We are actively testing the
+              calculators, improving the user experience, and gathering
+              feedback from real hospitality operators.
+            </p>
+          </div>
 
-    <div>
-      <h3 className="font-bold text-lg text-gray-900">
-        What We’re Building
-      </h3>
-      <p className="mt-2 leading-6">
-        Coming features include saved items, Bar Back tools, Pantry inventory,
-        recipe costing, reports, and paid Pro features for operators who want
-        to save and manage their data.
-      </p>
-    </div>
-  </div>
+          <div>
+            <h3 className="font-bold text-lg text-gray-900">
+              What We’re Building
+            </h3>
+            <p className="mt-2 leading-6">
+              Coming features include saved items, Bar Back tools, Pantry
+              inventory, recipe costing, reports, and paid Pro features for
+              operators who want to save and manage their data.
+            </p>
+          </div>
+        </div>
 
-  <div className="max-w-6xl mx-auto mt-8 pt-5 border-t text-center text-xs text-gray-500">
-    <p>
-      Kitchen & Tap Beta • Veteran-Owned • Built for bars, restaurants,
-      clubs, and small hospitality operators.
-    </p>
-  </div>
-</footer>
+        <div className="max-w-6xl mx-auto mt-8 pt-5 border-t text-center text-xs text-gray-500">
+          <p>
+            Kitchen & Tap Beta • Veteran-Owned • Built for bars, restaurants,
+            clubs, and small hospitality operators.
+          </p>
+        </div>
+      </footer>
     </main>
   );
 }
