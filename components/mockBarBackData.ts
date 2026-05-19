@@ -10,8 +10,8 @@ export const startingItems: BarItem[] = [
     averageOrdered: 4,
     averageRemaining: 2,
     bottleCost: 23.75,
-    bottleSize: 25.36,
-    pourSize: 1.5,
+    bottleSize: "25.36",
+    pourSize: "1.5",
     drinkCost: 1.41,
     menuPrice: 8,
     profit: 6.59,
@@ -22,6 +22,7 @@ export const startingItems: BarItem[] = [
     eventAddEnabled: false,
     eventAdd: 0,
   },
+
   {
     id: 2,
     productName: "Jameson Irish Whiskey",
@@ -31,8 +32,8 @@ export const startingItems: BarItem[] = [
     averageOrdered: 3,
     averageRemaining: 1,
     bottleCost: 31.5,
-    bottleSize: 25.36,
-    pourSize: 1.5,
+    bottleSize: "25.36",
+    pourSize: "1.5",
     drinkCost: 1.86,
     menuPrice: 9,
     profit: 7.14,
@@ -43,6 +44,7 @@ export const startingItems: BarItem[] = [
     eventAddEnabled: false,
     eventAdd: 0,
   },
+
   {
     id: 3,
     productName: "Bacardi Superior",
@@ -52,8 +54,8 @@ export const startingItems: BarItem[] = [
     averageOrdered: 2,
     averageRemaining: 1,
     bottleCost: 18.99,
-    bottleSize: 25.36,
-    pourSize: 1.5,
+    bottleSize: "25.36",
+    pourSize: "1.5",
     drinkCost: 1.12,
     menuPrice: 7,
     profit: 5.88,
@@ -64,6 +66,7 @@ export const startingItems: BarItem[] = [
     eventAddEnabled: false,
     eventAdd: 0,
   },
+
   {
     id: 4,
     productName: "Captain Morgan",
@@ -73,8 +76,8 @@ export const startingItems: BarItem[] = [
     averageOrdered: 2,
     averageRemaining: 1,
     bottleCost: 21.25,
-    bottleSize: 25.36,
-    pourSize: 1.5,
+    bottleSize: "25.36",
+    pourSize: "1.5",
     drinkCost: 1.26,
     menuPrice: 8,
     profit: 6.74,
@@ -85,6 +88,7 @@ export const startingItems: BarItem[] = [
     eventAddEnabled: false,
     eventAdd: 0,
   },
+
   {
     id: 5,
     productName: "Casamigos Blanco",
@@ -94,8 +98,8 @@ export const startingItems: BarItem[] = [
     averageOrdered: 1,
     averageRemaining: 1,
     bottleCost: 42.99,
-    bottleSize: 25.36,
-    pourSize: 1.5,
+    bottleSize: "25.36",
+    pourSize: "1.5",
     drinkCost: 2.54,
     menuPrice: 11,
     profit: 8.46,
@@ -106,6 +110,7 @@ export const startingItems: BarItem[] = [
     eventAddEnabled: false,
     eventAdd: 0,
   },
+
   {
     id: 6,
     productName: "Bud Light",
@@ -115,8 +120,8 @@ export const startingItems: BarItem[] = [
     averageOrdered: 24,
     averageRemaining: 12,
     bottleCost: 1.1,
-    bottleSize: 1,
-    pourSize: 1,
+    bottleSize: "1",
+    pourSize: "1",
     drinkCost: 1.1,
     menuPrice: 4,
     profit: 2.9,
@@ -127,6 +132,7 @@ export const startingItems: BarItem[] = [
     eventAddEnabled: false,
     eventAdd: 0,
   },
+
   {
     id: 7,
     productName: "Coors Light",
@@ -136,8 +142,8 @@ export const startingItems: BarItem[] = [
     averageOrdered: 24,
     averageRemaining: 12,
     bottleCost: 1.05,
-    bottleSize: 1,
-    pourSize: 1,
+    bottleSize: "1",
+    pourSize: "1",
     drinkCost: 1.05,
     menuPrice: 4,
     profit: 2.95,
@@ -148,6 +154,7 @@ export const startingItems: BarItem[] = [
     eventAddEnabled: false,
     eventAdd: 0,
   },
+
   {
     id: 8,
     productName: "High Noon Vodka Seltzer",
@@ -157,8 +164,8 @@ export const startingItems: BarItem[] = [
     averageOrdered: 12,
     averageRemaining: 6,
     bottleCost: 2.25,
-    bottleSize: 1,
-    pourSize: 1,
+    bottleSize: "1",
+    pourSize: "1",
     drinkCost: 2.25,
     menuPrice: 6,
     profit: 3.75,
@@ -169,6 +176,7 @@ export const startingItems: BarItem[] = [
     eventAddEnabled: false,
     eventAdd: 0,
   },
+
   {
     id: 9,
     productName: "House Chardonnay",
@@ -178,8 +186,8 @@ export const startingItems: BarItem[] = [
     averageOrdered: 5,
     averageRemaining: 3,
     bottleCost: 12.5,
-    bottleSize: 25.36,
-    pourSize: 5,
+    bottleSize: "25.36",
+    pourSize: "5",
     drinkCost: 2.46,
     menuPrice: 8,
     profit: 5.54,
@@ -190,6 +198,7 @@ export const startingItems: BarItem[] = [
     eventAddEnabled: false,
     eventAdd: 0,
   },
+
   {
     id: 10,
     productName: "House Cabernet",
@@ -199,8 +208,8 @@ export const startingItems: BarItem[] = [
     averageOrdered: 5,
     averageRemaining: 2,
     bottleCost: 13.75,
-    bottleSize: 25.36,
-    pourSize: 5,
+    bottleSize: "25.36",
+    pourSize: "5",
     drinkCost: 2.71,
     menuPrice: 8,
     profit: 5.29,
