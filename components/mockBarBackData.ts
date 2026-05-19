@@ -5,94 +5,60 @@ export const startingItems: BarItem[] = [
     id: 1,
     productName: "Tito's Vodka",
     category: "Liquor",
+
     currentInventory: 2.5,
     targetInventory: 6,
+
     averageOrdered: 4,
     averageRemaining: 2,
+
     bottleCost: 23.75,
+
+    bottleSize: 25.36,
+    pourSize: 1.5,
+
     drinkCost: 1.98,
     menuPrice: 8,
+
     profit: 6.02,
     costPercent: 24.75,
+
     lastPriceReview: "2026-05-01",
+
     pricingAlertDismissed: false,
     inventoryReviewed: false,
+
     eventAddEnabled: false,
     eventAdd: 0,
   },
+
   {
     id: 2,
-    productName: "Jameson Irish Whiskey",
-    category: "Liquor",
-    currentInventory: 1.5,
-    targetInventory: 4,
-    averageOrdered: 3,
-    averageRemaining: 1,
-    bottleCost: 31.5,
-    drinkCost: 2.63,
-    menuPrice: 9,
-    profit: 6.37,
-    costPercent: 29.22,
-    lastPriceReview: "2026-05-01",
-    pricingAlertDismissed: false,
-    inventoryReviewed: false,
-    eventAddEnabled: false,
-    eventAdd: 0,
-  },
-  {
-    id: 3,
-    productName: "Bacardi Superior",
-    category: "Liquor",
-    currentInventory: 0.5,
-    targetInventory: 3,
-    averageOrdered: 2,
-    averageRemaining: 1,
-    bottleCost: 18.99,
-    drinkCost: 1.58,
-    menuPrice: 7,
-    profit: 5.42,
-    costPercent: 22.57,
-    lastPriceReview: "2026-05-01",
-    pricingAlertDismissed: false,
-    inventoryReviewed: false,
-    eventAddEnabled: false,
-    eventAdd: 0,
-  },
-  {
-    id: 4,
     productName: "Bud Light",
     category: "Beer",
+
     currentInventory: 18,
     targetInventory: 48,
-    averageOrdered: 30,
-    averageRemaining: 18,
+
+    averageOrdered: 24,
+    averageRemaining: 12,
+
     bottleCost: 1.1,
+
+    bottleSize: 1,
+    pourSize: 1,
+
     drinkCost: 1.1,
     menuPrice: 4,
+
     profit: 2.9,
     costPercent: 27.5,
+
     lastPriceReview: "2026-05-01",
+
     pricingAlertDismissed: false,
     inventoryReviewed: false,
-    eventAddEnabled: false,
-    eventAdd: 0,
-  },
-  {
-    id: 5,
-    productName: "House Chardonnay",
-    category: "Wine",
-    currentInventory: 3,
-    targetInventory: 8,
-    averageOrdered: 5,
-    averageRemaining: 3,
-    bottleCost: 12.5,
-    drinkCost: 2.5,
-    menuPrice: 8,
-    profit: 5.5,
-    costPercent: 31.25,
-    lastPriceReview: "2026-05-01",
-    pricingAlertDismissed: false,
-    inventoryReviewed: false,
+
     eventAddEnabled: false,
     eventAdd: 0,
   },
