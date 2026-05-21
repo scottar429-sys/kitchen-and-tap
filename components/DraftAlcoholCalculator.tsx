@@ -2,31 +2,47 @@
 
 import { useState } from "react";
 
-export default function WineCalculator() {
+export default function DraftAlcoholCalculator() {
   const [productName, setProductName] = useState("");
-  const [bottleCost, setBottleCost] = useState("");
+  const [productCost, setProductCost] = useState("");
 
-  const [bottleSize, setBottleSize] = useState("750");
-  const [customBottleSize, setCustomBottleSize] = useState("");
-  const [customBottleUnit, setCustomBottleUnit] = useState("ml");
+  const [containerSize, setContainerSize] = useState("1984");
+  const [customContainerSize, setCustomContainerSize] = useState("");
+  const [customContainerUnit, setCustomContainerUnit] = useState("oz");
 
-  const [pourSize, setPourSize] = useState("5");
-  const [customPourSize, setCustomPourSize] = useState("");
+  const [servingSize, setServingSize] = useState("16");
+  const [customServingSize, setCustomServingSize] = useState("");
 
   const [pricingMode, setPricingMode] = useState("target");
   const [manualPrice, setManualPrice] = useState("");
   const [markupPercent, setMarkupPercent] = useState("300");
   const [targetCostPercent, setTargetCostPercent] = useState("25");
 
-  const [largePourValuePricing, setLargePourValuePricing] = useState("7.5");
-  const [bottleValuePricing, setBottleValuePricing] = useState("12.5");
-
   const [rounding, setRounding] = useState("0.25");
+  const [discountMode, setDiscountMode] = useState("standard");
+
+  const [customDiscounts, setCustomDiscounts] = useState({
+    largePour: "5",
+    crowler: "10",
+    pitcher: "15",
+    growler: "20",
+  });
+
+  const referenceServings = [
+    { key: "taster", label: "5 oz Taster", ounces: 5, discount: 0 },
+    { key: "small", label: "8 oz Small Pour", ounces: 8, discount: 0 },
+    { key: "twelve", label: "12 oz Pour", ounces: 12, discount: 0 },
+    { key: "pint", label: "16 oz Pint", ounces: 16, discount: 0 },
+    { key: "largePour", label: "20 oz Large Pour", ounces: 20, discount: 5 },
+    { key: "crowler", label: "32 oz Crowler", ounces: 32, discount: 10 },
+    { key: "pitcher", label: "60 oz Pitcher", ounces: 60, discount: 15 },
+    { key: "growler", label: "64 oz Growler", ounces: 64, discount: 20 },
+  ];
 
   function convertToOunces(size: number, unit: string) {
-    if (unit === "ml") return size / 29.5735;
-    if (unit === "l") return (size * 1000) / 29.5735;
     if (unit === "oz") return size;
+    if (unit === "gal") return size * 128;
+    if (unit === "l") return size * 33.814;
     return 0;
   }
 
@@ -35,50 +51,84 @@ export default function WineCalculator() {
     return (Math.round(value / increment) * increment).toFixed(2);
   }
 
-  const bottleOunces =
-    bottleSize === "custom"
-      ? convertToOunces(Number(customBottleSize || 0), customBottleUnit)
-      : convertToOunces(Number(bottleSize), "ml");
+  function getDiscount(item: any) {
+    if (discountMode === "none") return 0;
 
-  const selectedPourSize =
-    pourSize === "custom" ? Number(customPourSize || 0) : Number(pourSize);
+    if (discountMode === "standard") {
+      return item.discount;
+    }
+
+    if (discountMode === "custom") {
+      if (item.key === "largePour") {
+        return Number(customDiscounts.largePour || 0);
+      }
+
+      if (item.key === "crowler") {
+        return Number(customDiscounts.crowler || 0);
+      }
+
+      if (item.key === "pitcher") {
+        return Number(customDiscounts.pitcher || 0);
+      }
+
+      if (item.key === "growler") {
+        return Number(customDiscounts.growler || 0);
+      }
+    }
+
+    return 0;
+  }
+
+  const totalOunces =
+    containerSize === "custom"
+      ? convertToOunces(Number(customContainerSize || 0), customContainerUnit)
+      : Number(containerSize);
+
+  const selectedServingSize =
+    servingSize === "custom"
+      ? Number(customServingSize || 0)
+      : Number(servingSize);
 
   const costPerOunce =
-    Number(bottleCost || 0) > 0 && bottleOunces > 0
-      ? Number(bottleCost) / bottleOunces
+    Number(productCost || 0) > 0 && totalOunces > 0
+      ? Number(productCost) / totalOunces
       : 0;
 
-  function calculateGlass(ounces: number, valuePricingPercent = 0) {
-    const glassCost = costPerOunce * ounces;
+  function calculateServing(ounces: number, discountPercent = 0) {
+    const servingCost = costPerOunce * ounces;
 
     let calculatedPrice = Number(manualPrice || 0);
 
     if (pricingMode === "markup") {
-      calculatedPrice = glassCost * (1 + Number(markupPercent || 0) / 100);
+      calculatedPrice = servingCost * (1 + Number(markupPercent || 0) / 100);
     }
 
     if (pricingMode === "target") {
       calculatedPrice =
         Number(targetCostPercent || 0) > 0
-          ? glassCost / (Number(targetCostPercent) / 100)
+          ? servingCost / (Number(targetCostPercent) / 100)
           : 0;
     }
 
-    if (pricingMode === "manual" && selectedPourSize > 0) {
-      calculatedPrice = Number(manualPrice || 0) * (ounces / selectedPourSize);
+    if (pricingMode === "manual" && selectedServingSize > 0) {
+      calculatedPrice =
+        Number(manualPrice || 0) * (ounces / selectedServingSize);
     }
 
-    const valuePrice =
-      calculatedPrice * (1 - Number(valuePricingPercent || 0) / 100);
+    const discountedPrice =
+      calculatedPrice * (1 - Number(discountPercent || 0) / 100);
 
-    const menuPrice = Number(roundToIncrement(valuePrice, Number(rounding)));
+    const menuPrice = Number(
+      roundToIncrement(discountedPrice, Number(rounding))
+    );
 
-    const profit = menuPrice - glassCost;
+    const profit = menuPrice - servingCost;
     const profitMargin = menuPrice > 0 ? (profit / menuPrice) * 100 : 0;
-    const actualCostPercent = menuPrice > 0 ? (glassCost / menuPrice) * 100 : 0;
+    const actualCostPercent =
+      menuPrice > 0 ? (servingCost / menuPrice) * 100 : 0;
 
     return {
-      glassCost,
+      servingCost,
       menuPrice,
       profit,
       profitMargin,
@@ -86,47 +136,19 @@ export default function WineCalculator() {
     };
   }
 
-  const mainResult = calculateGlass(selectedPourSize);
+  const mainResult = calculateServing(selectedServingSize);
 
-  const estimatedGlasses =
-    selectedPourSize > 0 && bottleOunces > 0
-      ? bottleOunces / selectedPourSize
+  const estimatedServings =
+    selectedServingSize > 0 && totalOunces > 0
+      ? totalOunces / selectedServingSize
       : 0;
 
-  const estimatedRevenue = mainResult.menuPrice * estimatedGlasses;
-  const estimatedProfit = estimatedRevenue - Number(bottleCost || 0);
-
-  const fiveOunceResult = calculateGlass(5);
-  const fiveOunceGlassesPerBottle = bottleOunces > 0 ? bottleOunces / 5 : 0;
-
-  const bottleMenuValue = fiveOunceResult.menuPrice * fiveOunceGlassesPerBottle;
-
-  const bottlePrice = Number(
-    roundToIncrement(
-      bottleMenuValue * (1 - Number(bottleValuePricing || 0) / 100),
-      Number(rounding)
-    )
-  );
-
-  const bottleProfit = bottlePrice - Number(bottleCost || 0);
-  const bottleProfitMargin =
-    bottlePrice > 0 ? (bottleProfit / bottlePrice) * 100 : 0;
-  const bottleCostPercent =
-    bottlePrice > 0 ? (Number(bottleCost || 0) / bottlePrice) * 100 : 0;
-
-  const referencePourSizes = [
-    { label: "5 oz Glass", ounces: 5, valuePricing: 0 },
-    { label: "6 oz Glass", ounces: 6, valuePricing: 0 },
-    {
-      label: "9 oz Glass",
-      ounces: 9,
-      valuePricing: Number(largePourValuePricing || 0),
-    },
-  ];
+  const estimatedRevenue = mainResult.menuPrice * estimatedServings;
+  const estimatedProfit = estimatedRevenue - Number(productCost || 0);
 
   return (
     <div className="max-w-xl mx-auto bg-white rounded-2xl shadow-lg p-6 space-y-5">
-      <h2 className="text-3xl font-bold">Wine Calculator</h2>
+      <h2 className="text-3xl font-bold">Draft Alcohol Calculator</h2>
 
       <div className="space-y-2">
         <p className="font-semibold">Product Name</p>
@@ -134,101 +156,101 @@ export default function WineCalculator() {
           type="text"
           value={productName}
           onChange={(e) => setProductName(e.target.value)}
-          placeholder="Example: House Cabernet, Pinot Grigio, Prosecco"
+          placeholder="Example: Local IPA, Cider, Sangria, Wine on Tap"
           className="w-full border rounded-xl p-3"
         />
       </div>
 
       <input
         className="w-full border rounded-lg p-3"
-        placeholder="Bottle Cost ($)"
-        value={bottleCost}
-        onChange={(e) => setBottleCost(e.target.value)}
+        placeholder="Keg / Batch Cost ($)"
+        value={productCost}
+        onChange={(e) => setProductCost(e.target.value)}
       />
 
       <div className="space-y-2">
-        <p className="font-semibold">Bottle Size</p>
+        <p className="font-semibold">Keg / Batch Size</p>
 
         <div className="flex flex-wrap gap-4">
           {[
-            ["750", "750mL"],
-            ["1000", "1L"],
-            ["1500", "1.5L"],
+            ["1984", "1/2 Barrel"],
+            ["992", "1/4 Barrel"],
+            ["661", "1/6 Barrel"],
+            ["640", "5 Gallon Corny"],
             ["custom", "Custom"],
           ].map(([value, label]) => (
             <label key={value} className="flex items-center gap-2">
               <input
                 type="radio"
-                name="wineBottleSize"
+                name="containerSize"
                 value={value}
-                checked={bottleSize === value}
-                onChange={(e) => setBottleSize(e.target.value)}
+                checked={containerSize === value}
+                onChange={(e) => setContainerSize(e.target.value)}
               />
               {label}
             </label>
           ))}
         </div>
 
-        {bottleSize === "custom" ? (
+        {containerSize === "custom" ? (
           <div className="grid grid-cols-2 gap-3">
             <input
               className="w-full border rounded-lg p-3"
-              placeholder="Custom bottle size"
-              value={customBottleSize}
-              onChange={(e) => setCustomBottleSize(e.target.value)}
+              placeholder="Custom size"
+              value={customContainerSize}
+              onChange={(e) => setCustomContainerSize(e.target.value)}
             />
 
             <select
               className="w-full border rounded-lg p-3"
-              value={customBottleUnit}
-              onChange={(e) => setCustomBottleUnit(e.target.value)}
+              value={customContainerUnit}
+              onChange={(e) => setCustomContainerUnit(e.target.value)}
             >
-              <option value="ml">mL</option>
-              <option value="l">Liters</option>
               <option value="oz">Ounces</option>
+              <option value="gal">Gallons</option>
+              <option value="l">Liters</option>
             </select>
           </div>
         ) : null}
       </div>
 
       <div className="space-y-2">
-        <p className="font-semibold">Standard Pour Size</p>
+        <p className="font-semibold">Standard Serving Size</p>
 
         <div className="flex flex-wrap gap-4">
           {[
             ["5", "5 oz"],
-            ["6", "6 oz"],
-            ["9", "9 oz"],
+            ["8", "8 oz"],
+            ["12", "12 oz"],
+            ["16", "16 oz"],
+            ["20", "20 oz"],
             ["custom", "Custom"],
           ].map(([value, label]) => (
             <label key={value} className="flex items-center gap-2">
               <input
                 type="radio"
-                name="winePourSize"
+                name="servingSize"
                 value={value}
-                checked={pourSize === value}
-                onChange={(e) => setPourSize(e.target.value)}
+                checked={servingSize === value}
+                onChange={(e) => setServingSize(e.target.value)}
               />
               {label}
             </label>
           ))}
         </div>
 
-        {pourSize === "custom" ? (
+        {servingSize === "custom" ? (
           <input
             className="w-full border rounded-lg p-3"
-            placeholder="Custom pour size in ounces"
-            value={customPourSize}
-            onChange={(e) => setCustomPourSize(e.target.value)}
+            placeholder="Custom serving size in ounces"
+            value={customServingSize}
+            onChange={(e) => setCustomServingSize(e.target.value)}
           />
         ) : null}
       </div>
 
       <div className="space-y-2">
         <p className="font-semibold">Pricing Strategy</p>
-        <p className="text-sm text-gray-500">
-          Choose how you want to calculate your wine pricing.
-        </p>
 
         <div className="grid gap-3">
           {[
@@ -243,18 +265,19 @@ export default function WineCalculator() {
               <div className="flex items-center gap-2">
                 <input
                   type="radio"
-                  name="winePricingMode"
+                  name="pricingMode"
                   value={value}
                   checked={pricingMode === value}
                   onChange={(e) => setPricingMode(e.target.value)}
                 />
+
                 <span className="font-semibold">{label}</span>
               </div>
 
               <span className="text-xs text-gray-500 mt-1 ml-6">
                 {value === "target" &&
-                  "Recommended for wine cost and margin control"}
-                {value === "markup" && "Simple pricing based on bottle cost"}
+                  "Recommended for draft pricing and margin control"}
+                {value === "markup" && "Simple pricing based on product cost"}
                 {value === "manual" && "Analyze your current menu pricing"}
               </span>
             </label>
@@ -270,8 +293,9 @@ export default function WineCalculator() {
             value={manualPrice}
             onChange={(e) => setManualPrice(e.target.value)}
           />
+
           <p className="text-xs text-gray-500">
-            Use this mode to analyze existing glass prices and profitability.
+            Use this mode to analyze existing menu prices and profitability.
           </p>
         </div>
       ) : null}
@@ -285,7 +309,7 @@ export default function WineCalculator() {
               <label key={value} className="flex items-center gap-2">
                 <input
                   type="radio"
-                  name="wineMarkup"
+                  name="markupPercent"
                   value={value}
                   checked={
                     value === "custom"
@@ -298,6 +322,7 @@ export default function WineCalculator() {
                       : setMarkupPercent(value)
                   }
                 />
+
                 {value === "custom" ? "Custom" : `${value}%`}
               </label>
             ))}
@@ -319,15 +344,15 @@ export default function WineCalculator() {
           <p className="font-semibold">Target Cost Percentage</p>
 
           <div className="flex flex-wrap gap-4">
-            {["20", "25", "30", "35", "custom"].map((value) => (
+            {["18", "20", "25", "30", "custom"].map((value) => (
               <label key={value} className="flex items-center gap-2">
                 <input
                   type="radio"
-                  name="wineTargetCostPercent"
+                  name="targetCostPercent"
                   value={value}
                   checked={
                     value === "custom"
-                      ? !["20", "25", "30", "35"].includes(targetCostPercent)
+                      ? !["18", "20", "25", "30"].includes(targetCostPercent)
                       : targetCostPercent === value
                   }
                   onChange={() =>
@@ -336,15 +361,16 @@ export default function WineCalculator() {
                       : setTargetCostPercent(value)
                   }
                 />
+
                 {value === "custom" ? "Custom" : `${value}%`}
               </label>
             ))}
           </div>
 
-          {!["20", "25", "30", "35"].includes(targetCostPercent) ? (
+          {!["18", "20", "25", "30"].includes(targetCostPercent) ? (
             <input
               className="w-full border rounded-lg p-3"
-              placeholder="Custom target cost %, example: 28"
+              placeholder="Custom target cost %, example: 22"
               value={targetCostPercent}
               onChange={(e) => setTargetCostPercent(e.target.value)}
             />
@@ -353,85 +379,95 @@ export default function WineCalculator() {
       ) : null}
 
       <div className="space-y-2">
-        <p className="font-semibold">Large Pour Value Pricing</p>
+        <p className="font-semibold">Volume Discount Pricing</p>
 
-        <div className="flex flex-wrap gap-4">
-          {["0", "5", "7.5", "10", "custom"].map((value) => (
-            <label key={value} className="flex items-center gap-2">
+        <div className="grid gap-3">
+          {[
+            ["none", "No Discounts"],
+            ["standard", "Standard Discounts"],
+            ["custom", "Custom Discounts"],
+          ].map(([value, label]) => (
+            <label
+              key={value}
+              className="flex items-center gap-2 border rounded-xl p-3 cursor-pointer"
+            >
               <input
                 type="radio"
-                name="largePourValuePricing"
+                name="discountMode"
                 value={value}
-                checked={
-                  value === "custom"
-                    ? !["0", "5", "7.5", "10"].includes(
-                        largePourValuePricing
-                      )
-                    : largePourValuePricing === value
-                }
-                onChange={() =>
-                  value === "custom"
-                    ? setLargePourValuePricing("")
-                    : setLargePourValuePricing(value)
-                }
+                checked={discountMode === value}
+                onChange={(e) => setDiscountMode(e.target.value)}
               />
-              {value === "custom" ? "Custom" : `${value}%`}
+
+              <span className="font-semibold">{label}</span>
             </label>
           ))}
         </div>
 
-        {!["0", "5", "7.5", "10"].includes(largePourValuePricing) ? (
-          <input
-            className="w-full border rounded-lg p-3"
-            placeholder="Custom large pour value %, example: 8"
-            value={largePourValuePricing}
-            onChange={(e) => setLargePourValuePricing(e.target.value)}
-          />
+        {discountMode === "standard" ? (
+          <div className="bg-orange-50 border border-orange-200 rounded-xl p-3 text-sm text-gray-700">
+            <p className="font-semibold mb-1">Standard discount schedule:</p>
+            <p>20 oz Large Pour: 5%</p>
+            <p>32 oz Crowler: 10%</p>
+            <p>60 oz Pitcher: 15%</p>
+            <p>64 oz Growler: 20%</p>
+          </div>
+        ) : null}
+
+        {discountMode === "custom" ? (
+          <div className="grid gap-3">
+            <input
+              className="w-full border rounded-lg p-3"
+              placeholder="20 oz Large Pour discount %, example: 5"
+              value={customDiscounts.largePour}
+              onChange={(e) =>
+                setCustomDiscounts({
+                  ...customDiscounts,
+                  largePour: e.target.value,
+                })
+              }
+            />
+
+            <input
+              className="w-full border rounded-lg p-3"
+              placeholder="32 oz Crowler discount %, example: 10"
+              value={customDiscounts.crowler}
+              onChange={(e) =>
+                setCustomDiscounts({
+                  ...customDiscounts,
+                  crowler: e.target.value,
+                })
+              }
+            />
+
+            <input
+              className="w-full border rounded-lg p-3"
+              placeholder="60 oz Pitcher discount %, example: 15"
+              value={customDiscounts.pitcher}
+              onChange={(e) =>
+                setCustomDiscounts({
+                  ...customDiscounts,
+                  pitcher: e.target.value,
+                })
+              }
+            />
+
+            <input
+              className="w-full border rounded-lg p-3"
+              placeholder="64 oz Growler discount %, example: 20"
+              value={customDiscounts.growler}
+              onChange={(e) =>
+                setCustomDiscounts({
+                  ...customDiscounts,
+                  growler: e.target.value,
+                })
+              }
+            />
+          </div>
         ) : null}
 
         <p className="text-xs text-gray-500">
-          Applies value pricing to larger wine pours like 9 oz.
-        </p>
-      </div>
-
-      <div className="space-y-2">
-        <p className="font-semibold">Bottle Value Pricing</p>
-
-        <div className="flex flex-wrap gap-4">
-          {["0", "10", "12.5", "15", "custom"].map((value) => (
-            <label key={value} className="flex items-center gap-2">
-              <input
-                type="radio"
-                name="bottleValuePricing"
-                value={value}
-                checked={
-                  value === "custom"
-                    ? !["0", "10", "12.5", "15"].includes(bottleValuePricing)
-                    : bottleValuePricing === value
-                }
-                onChange={() =>
-                  value === "custom"
-                    ? setBottleValuePricing("")
-                    : setBottleValuePricing(value)
-                }
-              />
-              {value === "custom" ? "Custom" : `${value}%`}
-            </label>
-          ))}
-        </div>
-
-        {!["0", "10", "12.5", "15"].includes(bottleValuePricing) ? (
-          <input
-            className="w-full border rounded-lg p-3"
-            placeholder="Custom bottle value %, example: 20"
-            value={bottleValuePricing}
-            onChange={(e) => setBottleValuePricing(e.target.value)}
-          />
-        ) : null}
-
-        <p className="text-xs text-gray-500">
-          Bottle pricing is based on the 5 oz glass value with optional bottle
-          value pricing.
+          Discounts apply to the calculated menu price, not the product cost.
         </p>
       </div>
 
@@ -448,11 +484,12 @@ export default function WineCalculator() {
             <label key={value} className="flex items-center gap-2">
               <input
                 type="radio"
-                name="wineRounding"
+                name="rounding"
                 value={value}
                 checked={rounding === value}
                 onChange={(e) => setRounding(e.target.value)}
               />
+
               {label}
             </label>
           ))}
@@ -464,28 +501,24 @@ export default function WineCalculator() {
       </button>
 
       <div className="bg-gray-100 rounded-xl p-4 space-y-3">
-        <div>
-          <h3 className="text-xl font-bold">Pricing Summary</h3>
-          <p className="text-sm text-gray-500">
-            Review your recommended glass pricing and profitability.
-          </p>
-        </div>
+        <h3 className="text-xl font-bold">Pricing Summary</h3>
 
         <div className="bg-green-100 border border-green-300 rounded-xl p-4 text-center">
           <p className="text-sm font-semibold text-green-800">
-            Recommended Glass Price
+            Recommended Menu Price
           </p>
+
           <p className="text-4xl font-bold text-green-900">
             ${mainResult.menuPrice.toFixed(2)}
           </p>
         </div>
 
         <p>
-          <strong>Standard Pour Size:</strong> {selectedPourSize.toFixed(2)} oz
+          <strong>Serving Size:</strong> {selectedServingSize.toFixed(2)} oz
         </p>
 
         <p>
-          <strong>Glass Cost:</strong> ${mainResult.glassCost.toFixed(2)}
+          <strong>Serving Cost:</strong> ${mainResult.servingCost.toFixed(2)}
         </p>
 
         <p>
@@ -493,12 +526,11 @@ export default function WineCalculator() {
         </p>
 
         <p>
-          <strong>Estimated Glasses Per Bottle:</strong>{" "}
-          {estimatedGlasses.toFixed(1)}
+          <strong>Estimated Servings:</strong> {estimatedServings.toFixed(1)}
         </p>
 
         <p>
-          <strong>Profit Per Glass:</strong> ${mainResult.profit.toFixed(2)}
+          <strong>Profit Per Serving:</strong> ${mainResult.profit.toFixed(2)}
         </p>
 
         <p>
@@ -520,25 +552,25 @@ export default function WineCalculator() {
 
         {mainResult.actualCostPercent > 35 ? (
           <div className="bg-red-100 border border-red-300 text-red-800 rounded-xl p-3 text-sm font-semibold">
-            Warning: This wine price may be too low for your target margin.
+            Warning: This draft price may be too low for your target margin.
           </div>
         ) : null}
       </div>
 
       <div className="bg-gray-100 rounded-xl p-4 space-y-3">
-        <div>
-          <h3 className="text-xl font-bold">Wine Pour Reference</h3>
-          <p className="text-sm text-gray-600">
-            Compare standard pours, large pours, and bottle pricing.
-          </p>
-        </div>
+        <h3 className="text-xl font-bold">Draft Serving Reference</h3>
+
+        <p className="text-sm text-gray-600">
+          Larger pours, pitchers, crowlers, and growlers can use automatic or
+          custom value pricing.
+        </p>
 
         <div className="overflow-x-auto">
           <table className="w-full text-sm border-collapse">
             <thead>
               <tr className="border-b">
-                <th className="text-left py-2">Item</th>
-                <th className="text-left py-2">Value</th>
+                <th className="text-left py-2">Serving</th>
+                <th className="text-left py-2">Discount</th>
                 <th className="text-left py-2">Cost</th>
                 <th className="text-left py-2">Price</th>
                 <th className="text-left py-2">Profit</th>
@@ -547,14 +579,15 @@ export default function WineCalculator() {
             </thead>
 
             <tbody>
-              {referencePourSizes.map((item) => {
-                const result = calculateGlass(item.ounces, item.valuePricing);
+              {referenceServings.map((item) => {
+                const appliedDiscount = getDiscount(item);
+                const result = calculateServing(item.ounces, appliedDiscount);
 
                 return (
-                  <tr key={item.label} className="border-b">
+                  <tr key={item.label} className="border-b last:border-b-0">
                     <td className="py-2 font-semibold">{item.label}</td>
-                    <td className="py-2">{item.valuePricing}%</td>
-                    <td className="py-2">${result.glassCost.toFixed(2)}</td>
+                    <td className="py-2">{appliedDiscount}%</td>
+                    <td className="py-2">${result.servingCost.toFixed(2)}</td>
                     <td className="py-2">${result.menuPrice.toFixed(2)}</td>
                     <td className="py-2">${result.profit.toFixed(2)}</td>
                     <td className="py-2">
@@ -563,27 +596,12 @@ export default function WineCalculator() {
                   </tr>
                 );
               })}
-
-              <tr className="border-b last:border-b-0">
-                <td className="py-2 font-semibold">Bottle</td>
-                <td className="py-2">{bottleValuePricing}%</td>
-                <td className="py-2">${Number(bottleCost || 0).toFixed(2)}</td>
-                <td className="py-2">${bottlePrice.toFixed(2)}</td>
-                <td className="py-2">${bottleProfit.toFixed(2)}</td>
-                <td className="py-2">{bottleCostPercent.toFixed(1)}%</td>
-              </tr>
             </tbody>
           </table>
         </div>
 
         <p className="text-xs text-gray-500 pt-2">
-          5 oz and 6 oz pours use standard pricing. 9 oz pours and bottles use
-          optional value pricing.
-        </p>
-
-        <p className="text-xs text-gray-500">
-          Bottle pricing is based on the 5 oz glass value multiplied by
-          estimated 5 oz pours per bottle.
+          Discounts apply to the calculated menu price, not the product cost.
         </p>
       </div>
     </div>

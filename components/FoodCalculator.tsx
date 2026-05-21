@@ -1,201 +1,365 @@
 "use client";
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
+
+type IngredientRow = {
+  id: number;
+  name: string;
+  amount: number;
+  unit: string;
+  cost: number;
+};
+
+type PantryReviewItem = {
+  enteredName: string;
+  status: "matched" | "possible" | "new";
+  matchName?: string;
+  action: "useMatch" | "addNew" | "skip";
+};
+
+const units = ["oz", "lb", "g", "kg", "each", "cup", "tbsp", "tsp", "qt", "gal"];
+
+const samplePantryItems = [
+  "Chicken Breast",
+  "Sub Roll",
+  "Marinara Sauce",
+  "Mozzarella",
+  "Parmesan",
+  "Pizza Dough",
+  "Flour",
+  "Tomatoes",
+];
 
 export default function FoodCalculator() {
-  const [batchCost, setBatchCost] = useState("");
+  const [recipeName, setRecipeName] = useState("Chicken Parmesan Sandwich");
+  const [saveAs, setSaveAs] = useState("menu");
+  const [pricingMode, setPricingMode] = useState("margin");
+  const [manualPrice, setManualPrice] = useState("16");
+  const [targetMargin, setTargetMargin] = useState("70");
+  const [targetFoodCost, setTargetFoodCost] = useState("30");
+  const [additionalKitchenCost, setAdditionalKitchenCost] = useState("3");
+  const [rounding, setRounding] = useState("dollar");
 
-  const [portionPreset, setPortionPreset] = useState("4");
-  const [customPortionCount, setCustomPortionCount] = useState("");
-
-  const [pricingMode, setPricingMode] = useState("markup");
-
-  const [manualPrice, setManualPrice] = useState("");
-  const [markupPercent, setMarkupPercent] = useState("200");
-  const [targetCostPercent, setTargetCostPercent] = useState("30");
-
-  const [rounding, setRounding] = useState("0.25");
-
-  const [taxRate, setTaxRate] = useState("8.5");
-  const [customTaxRate, setCustomTaxRate] = useState("");
-  const [taxMode, setTaxMode] = useState("exclude");
-
-  function roundToIncrement(value: number, increment: number) {
-    if (increment <= 0) return value.toFixed(2);
-
-    return (
-      Math.round(value / increment) * increment
-    ).toFixed(2);
-  }
-
-  const selectedPortionCount =
-    portionPreset === "custom"
-      ? Number(customPortionCount || 0)
-      : Number(portionPreset);
-
-  const selectedTaxRate =
-    taxRate === "custom"
-      ? Number(customTaxRate || 0)
-      : Number(taxRate);
-
-  const costPerPortion =
-    Number(batchCost || 0) > 0 &&
-    selectedPortionCount > 0
-      ? Number(batchCost) / selectedPortionCount
-      : 0;
-
-  let calculatedPrice = Number(manualPrice || 0);
-
-  if (pricingMode === "markup") {
-    calculatedPrice =
-      costPerPortion *
-      (1 + Number(markupPercent || 0) / 100);
-  }
-
-  if (pricingMode === "target") {
-    calculatedPrice =
-      Number(targetCostPercent || 0) > 0
-        ? costPerPortion /
-          (Number(targetCostPercent) / 100)
-        : 0;
-  }
-
-  const menuPrice = Number(
-    roundToIncrement(calculatedPrice, Number(rounding))
+  const [showPantryReview, setShowPantryReview] = useState(false);
+  const [pantryReviewItems, setPantryReviewItems] = useState<PantryReviewItem[]>(
+    []
   );
 
-  function applyTax(price: number) {
-    if (
-      selectedTaxRate <= 0 ||
-      taxMode === "exclude"
-    ) {
-      return price.toFixed(2);
-    }
+  const [ingredients, setIngredients] = useState<IngredientRow[]>([
+    { id: 1, name: "Chicken Breast", amount: 8, unit: "oz", cost: 1.88 },
+    { id: 2, name: "Sub Roll", amount: 1, unit: "each", cost: 0.72 },
+    { id: 3, name: "Marinara Sauce", amount: 3, unit: "oz", cost: 0.45 },
+    { id: 4, name: "Mozzarella", amount: 2, unit: "oz", cost: 0.64 },
+    { id: 5, name: "Parmesan", amount: 1, unit: "oz", cost: 0.41 },
+  ]);
 
-    const taxedPrice =
-      price * (1 + selectedTaxRate / 100);
+  function applyRounding(value: number) {
+    if (rounding === "ninetyFive") return Math.floor(value) + 0.95;
+    if (rounding === "ninetyNine") return Math.floor(value) + 0.99;
+    if (rounding === "dollar") return Math.ceil(value);
+    return value;
+  }
 
-    if (rounding === "0.01") {
-      return taxedPrice.toFixed(2);
-    }
+  function normalizeName(value: string) {
+    return value.trim().toLowerCase();
+  }
 
-    return roundToIncrement(
-      taxedPrice,
-      Number(rounding)
+  function findPossibleMatch(name: string) {
+    const normalized = normalizeName(name);
+
+    return samplePantryItems.find((item) => {
+      const pantryName = normalizeName(item);
+
+      return (
+        pantryName.includes(normalized) ||
+        normalized.includes(pantryName) ||
+        pantryName[0] === normalized[0]
+      );
+    });
+  }
+
+  function addIngredient() {
+    setIngredients([
+      ...ingredients,
+      { id: Date.now(), name: "", amount: 1, unit: "oz", cost: 0 },
+    ]);
+  }
+
+  function updateIngredient(
+    id: number,
+    field: keyof IngredientRow,
+    value: string
+  ) {
+    setIngredients((rows) =>
+      rows.map((row) =>
+        row.id === id
+          ? {
+              ...row,
+              [field]:
+                field === "amount" || field === "cost" ? Number(value) : value,
+            }
+          : row
+      )
     );
   }
 
-  const finalFoodPrice = applyTax(menuPrice);
+  function removeIngredient(id: number) {
+    setIngredients((rows) => rows.filter((row) => row.id !== id));
+  }
 
-  const profit = menuPrice - costPerPortion;
+  function handleSaveRecipe() {
+    const reviewItems: PantryReviewItem[] = ingredients
+      .filter((item) => item.name.trim().length > 0)
+      .map((item) => {
+        const exactMatch = samplePantryItems.find(
+          (pantryItem) => normalizeName(pantryItem) === normalizeName(item.name)
+        );
 
-  const profitMargin =
-    menuPrice > 0
-      ? (profit / menuPrice) * 100
+        if (exactMatch) {
+          return {
+            enteredName: item.name,
+            status: "matched",
+            matchName: exactMatch,
+            action: "useMatch",
+          };
+        }
+
+        const possibleMatch = findPossibleMatch(item.name);
+
+        if (possibleMatch) {
+          return {
+            enteredName: item.name,
+            status: "possible",
+            matchName: possibleMatch,
+            action: "useMatch",
+          };
+        }
+
+        return {
+          enteredName: item.name,
+          status: "new",
+          action: "addNew",
+        };
+      });
+
+    setPantryReviewItems(reviewItems);
+    setShowPantryReview(true);
+  }
+
+  function updateReviewAction(index: number, action: PantryReviewItem["action"]) {
+    setPantryReviewItems((items) =>
+      items.map((item, itemIndex) =>
+        itemIndex === index ? { ...item, action } : item
+      )
+    );
+  }
+
+  function confirmSaveRecipe() {
+    setShowPantryReview(false);
+    alert("Recipe saved. Pantry review choices confirmed.");
+  }
+
+  const ingredientCost = useMemo(() => {
+    return ingredients.reduce((sum, item) => sum + Number(item.cost || 0), 0);
+  }, [ingredients]);
+
+  const additionalKitchenCostAmount =
+    ingredientCost * (Number(additionalKitchenCost || 0) / 100);
+
+  const totalRecipeCost = ingredientCost + additionalKitchenCostAmount;
+
+  const priceByMargin =
+    Number(targetMargin || 0) < 100
+      ? totalRecipeCost / (1 - Number(targetMargin || 0) / 100)
       : 0;
 
-  const actualFoodCostPercent =
-    menuPrice > 0
-      ? (costPerPortion / menuPrice) * 100
+  const priceByFoodCost =
+    Number(targetFoodCost || 0) > 0
+      ? totalRecipeCost / (Number(targetFoodCost || 0) / 100)
       : 0;
+
+  const calculatedPrice =
+    pricingMode === "manual"
+      ? Number(manualPrice || 0)
+      : pricingMode === "foodCost"
+      ? priceByFoodCost
+      : priceByMargin;
+
+  const menuPrice = applyRounding(calculatedPrice);
+
+  const profit = menuPrice - totalRecipeCost;
+  const profitMargin = menuPrice > 0 ? (profit / menuPrice) * 100 : 0;
+  const actualFoodCost = menuPrice > 0 ? (totalRecipeCost / menuPrice) * 100 : 0;
 
   return (
-    <div className="max-w-xl mx-auto bg-white rounded-2xl shadow-lg p-6 space-y-5">
-      <h2 className="text-3xl font-bold">
-        Food Calculator
-      </h2>
-
-      <input
-        className="w-full border rounded-lg p-3"
-        placeholder="Total Recipe / Batch Cost ($)"
-        value={batchCost}
-        onChange={(e) =>
-          setBatchCost(e.target.value)
-        }
-      />
-
-      <div className="space-y-2">
-        <p className="font-semibold">
-          Number of Portions
+    <div className="mx-auto max-w-xl space-y-5 rounded-2xl bg-white p-5 shadow-lg">
+      <div>
+        <h2 className="text-3xl font-bold">Food Calculator</h2>
+        <p className="text-sm text-gray-500">
+          Build recipes, compare selling prices, and review pantry items before
+          saving.
         </p>
-
-        <div className="flex flex-wrap gap-4">
-          {[
-            "1",
-            "2",
-            "4",
-            "6",
-            "12",
-            "custom",
-          ].map((value) => (
-            <label
-              key={value}
-              className="flex items-center gap-2"
-            >
-              <input
-                type="radio"
-                name="foodPortions"
-                value={value}
-                checked={portionPreset === value}
-                onChange={(e) =>
-                  setPortionPreset(e.target.value)
-                }
-              />
-
-              {value === "custom"
-                ? "Custom"
-                : value}
-            </label>
-          ))}
-        </div>
-
-        {portionPreset === "custom" ? (
-          <input
-            className="w-full border rounded-lg p-3"
-            placeholder="Custom number of portions"
-            value={customPortionCount}
-            onChange={(e) =>
-              setCustomPortionCount(
-                e.target.value
-              )
-            }
-          />
-        ) : null}
       </div>
 
       <div className="space-y-2">
-        <p className="font-semibold">
-          Pricing Method
-        </p>
+        <p className="font-semibold">Recipe Name</p>
+        <input
+          type="text"
+          value={recipeName}
+          onChange={(e) => setRecipeName(e.target.value)}
+          placeholder="Example: Chicken Parmesan Sandwich"
+          className="w-full rounded-xl border p-3"
+        />
+      </div>
 
-        <div className="flex flex-wrap gap-4">
+      <div className="space-y-2">
+        <p className="font-semibold">Recipe Type</p>
+
+        <div className="grid gap-3">
           {[
-            ["manual", "Manual"],
-            ["markup", "Markup %"],
+            ["menu", "Menu Item", "Finished item sold to a guest"],
             [
-              "target",
-              "Target Food Cost %",
+              "prep",
+              "Prep Item / Batch Recipe",
+              "Sauce, dough, dressing, marinade, or base recipe",
             ],
-          ].map(([value, label]) => (
-            <label
-              key={value}
-              className="flex items-center gap-2"
+          ].map(([value, label, description]) => (
+            <label key={value} className="cursor-pointer rounded-xl border p-3">
+              <div className="flex items-center gap-2">
+                <input
+                  type="radio"
+                  name="saveAs"
+                  value={value}
+                  checked={saveAs === value}
+                  onChange={(e) => setSaveAs(e.target.value)}
+                />
+                <span className="font-semibold">{label}</span>
+              </div>
+
+              <p className="ml-6 mt-1 text-xs text-gray-500">{description}</p>
+            </label>
+          ))}
+        </div>
+      </div>
+
+      <div className="space-y-3">
+        <div>
+          <p className="font-semibold">Ingredients</p>
+          <p className="text-sm text-gray-500">
+            Enter the amount used in this recipe and the used cost.
+          </p>
+        </div>
+
+        <div className="hidden grid-cols-[2fr_.65fr_.75fr_1.1fr_auto] gap-2 px-2 text-xs font-semibold uppercase tracking-wide text-gray-500 sm:grid">
+          <div>Ingredient</div>
+          <div>Amount</div>
+          <div>Unit</div>
+          <div>Used Cost</div>
+          <div></div>
+        </div>
+
+        <div className="space-y-3">
+          {ingredients.map((item) => (
+            <div
+              key={item.id}
+              className="grid grid-cols-[2fr_.65fr_.75fr_1.1fr_auto] gap-2 rounded-xl border bg-gray-50 p-3"
             >
               <input
-                type="radio"
-                name="foodPricingMode"
-                value={value}
-                checked={
-                  pricingMode === value
-                }
+                className="min-w-0 rounded-lg border p-2"
+                placeholder="Ingredient"
+                value={item.name}
                 onChange={(e) =>
-                  setPricingMode(
-                    e.target.value
-                  )
+                  updateIngredient(item.id, "name", e.target.value)
                 }
               />
 
-              {label}
+              <input
+                className="min-w-0 rounded-lg border p-2"
+                type="number"
+                placeholder="Amt"
+                value={item.amount}
+                onChange={(e) =>
+                  updateIngredient(item.id, "amount", e.target.value)
+                }
+              />
+
+              <select
+                className="min-w-0 rounded-lg border p-2"
+                value={item.unit}
+                onChange={(e) =>
+                  updateIngredient(item.id, "unit", e.target.value)
+                }
+              >
+                {units.map((unit) => (
+                  <option key={unit} value={unit}>
+                    {unit}
+                  </option>
+                ))}
+              </select>
+
+              <input
+                className="min-w-[80px] rounded-lg border p-2"
+                type="number"
+                step="0.01"
+                placeholder="Cost"
+                value={item.cost}
+                onChange={(e) =>
+                  updateIngredient(item.id, "cost", e.target.value)
+                }
+              />
+
+              {ingredients.length > 1 ? (
+                <button
+                  className="rounded-lg bg-red-100 px-3 font-bold text-red-700"
+                  onClick={() => removeIngredient(item.id)}
+                >
+                  X
+                </button>
+              ) : (
+                <div></div>
+              )}
+            </div>
+          ))}
+        </div>
+
+        <button
+          className="w-full rounded-xl border py-3 font-bold"
+          onClick={addIngredient}
+        >
+          + Add Ingredient
+        </button>
+      </div>
+
+      <div className="space-y-2">
+        <p className="font-semibold">Pricing Strategy</p>
+
+        <div className="grid gap-3">
+          {[
+            ["margin", "Target Margin %", "Recommended for menu profitability"],
+            [
+              "foodCost",
+              "Target Food Cost %",
+              "Common restaurant costing method",
+            ],
+            [
+              "manual",
+              "Current Selling Price",
+              "Analyze an existing menu price",
+            ],
+          ].map(([value, label, description]) => (
+            <label key={value} className="cursor-pointer rounded-xl border p-3">
+              <div className="flex items-center gap-2">
+                <input
+                  type="radio"
+                  name="pricingMode"
+                  value={value}
+                  checked={pricingMode === value}
+                  onChange={(e) => setPricingMode(e.target.value)}
+                />
+                <span className="font-semibold">{label}</span>
+              </div>
+
+              <p className="ml-6 mt-1 text-xs text-gray-500">{description}</p>
             </label>
           ))}
         </div>
@@ -203,185 +367,90 @@ export default function FoodCalculator() {
 
       {pricingMode === "manual" ? (
         <input
-          className="w-full border rounded-lg p-3"
-          placeholder="Manual menu price ($)"
+          className="w-full rounded-lg border p-3"
+          placeholder="Current selling price"
           value={manualPrice}
-          onChange={(e) =>
-            setManualPrice(e.target.value)
-          }
+          onChange={(e) => setManualPrice(e.target.value)}
         />
       ) : null}
 
-      {pricingMode === "markup" ? (
-        <div className="space-y-2">
-          <p className="font-semibold">
-            Markup Percentage
-          </p>
-
-          <div className="flex flex-wrap gap-4">
-            {[
-              "150",
-              "200",
-              "250",
-              "300",
-              "custom",
-            ].map((value) => (
-              <label
-                key={value}
-                className="flex items-center gap-2"
-              >
-                <input
-                  type="radio"
-                  name="foodMarkupPercent"
-                  value={value}
-                  checked={
-                    value === "custom"
-                      ? ![
-                          "150",
-                          "200",
-                          "250",
-                          "300",
-                        ].includes(
-                          markupPercent
-                        )
-                      : markupPercent ===
-                        value
-                  }
-                  onChange={() =>
-                    value === "custom"
-                      ? setMarkupPercent("")
-                      : setMarkupPercent(
-                          value
-                        )
-                  }
-                />
-
-                {value === "custom"
-                  ? "Custom"
-                  : `${value}%`}
-              </label>
-            ))}
-          </div>
-
-          {![
-            "150",
-            "200",
-            "250",
-            "300",
-          ].includes(markupPercent) ? (
-            <input
-              className="w-full border rounded-lg p-3"
-              placeholder="Custom markup %"
-              value={markupPercent}
-              onChange={(e) =>
-                setMarkupPercent(
-                  e.target.value
-                )
-              }
-            />
-          ) : null}
-        </div>
+      {pricingMode === "margin" ? (
+        <input
+          className="w-full rounded-lg border p-3"
+          placeholder="Target margin %, example: 70"
+          value={targetMargin}
+          onChange={(e) => setTargetMargin(e.target.value)}
+        />
       ) : null}
 
-      {pricingMode === "target" ? (
-        <div className="space-y-2">
-          <p className="font-semibold">
-            Target Food Cost Percentage
-          </p>
-
-          <div className="flex flex-wrap gap-4">
-            {[
-              "25",
-              "30",
-              "35",
-              "40",
-              "custom",
-            ].map((value) => (
-              <label
-                key={value}
-                className="flex items-center gap-2"
-              >
-                <input
-                  type="radio"
-                  name="foodTargetCostPercent"
-                  value={value}
-                  checked={
-                    value === "custom"
-                      ? ![
-                          "25",
-                          "30",
-                          "35",
-                          "40",
-                        ].includes(
-                          targetCostPercent
-                        )
-                      : targetCostPercent ===
-                        value
-                  }
-                  onChange={() =>
-                    value === "custom"
-                      ? setTargetCostPercent("")
-                      : setTargetCostPercent(
-                          value
-                        )
-                  }
-                />
-
-                {value === "custom"
-                  ? "Custom"
-                  : `${value}%`}
-              </label>
-            ))}
-          </div>
-
-          {![
-            "25",
-            "30",
-            "35",
-            "40",
-          ].includes(
-            targetCostPercent
-          ) ? (
-            <input
-              className="w-full border rounded-lg p-3"
-              placeholder="Custom target food cost %"
-              value={targetCostPercent}
-              onChange={(e) =>
-                setTargetCostPercent(
-                  e.target.value
-                )
-              }
-            />
-          ) : null}
-        </div>
+      {pricingMode === "foodCost" ? (
+        <input
+          className="w-full rounded-lg border p-3"
+          placeholder="Target food cost %, example: 30"
+          value={targetFoodCost}
+          onChange={(e) => setTargetFoodCost(e.target.value)}
+        />
       ) : null}
 
       <div className="space-y-2">
-        <p className="font-semibold">
-          Rounding
+        <p className="font-semibold">Additional Kitchen Cost %</p>
+
+        <p className="text-sm text-gray-500">
+          Optional percentage to help cover spices, garnish, oil, and small
+          kitchen consumables.
         </p>
 
         <div className="flex flex-wrap gap-4">
-          {[
-            ["0.01", "Exact"],
-            ["0.05", "$0.05"],
-            ["0.10", "$0.10"],
-            ["0.25", "$0.25"],
-          ].map(([value, label]) => (
-            <label
-              key={value}
-              className="flex items-center gap-2"
-            >
+          {["0", "2", "3", "5", "custom"].map((value) => (
+            <label key={value} className="flex items-center gap-2">
               <input
                 type="radio"
-                name="foodRounding"
+                name="additionalKitchenCost"
+                value={value}
+                checked={
+                  value === "custom"
+                    ? !["0", "2", "3", "5"].includes(additionalKitchenCost)
+                    : additionalKitchenCost === value
+                }
+                onChange={() =>
+                  value === "custom"
+                    ? setAdditionalKitchenCost("")
+                    : setAdditionalKitchenCost(value)
+                }
+              />
+
+              {value === "custom" ? "Custom" : `${value}%`}
+            </label>
+          ))}
+        </div>
+
+        {!["0", "2", "3", "5"].includes(additionalKitchenCost) ? (
+          <input
+            className="w-full rounded-lg border p-3"
+            placeholder="Custom additional kitchen cost %"
+            value={additionalKitchenCost}
+            onChange={(e) => setAdditionalKitchenCost(e.target.value)}
+          />
+        ) : null}
+      </div>
+
+      <div className="space-y-2">
+        <p className="font-semibold">Rounding</p>
+
+        <div className="flex flex-wrap gap-4">
+          {[
+            ["ninetyFive", ".95"],
+            ["ninetyNine", ".99"],
+            ["dollar", "Dollar"],
+            ["none", "Exact"],
+          ].map(([value, label]) => (
+            <label key={value} className="flex items-center gap-2">
+              <input
+                type="radio"
+                name="rounding"
                 value={value}
                 checked={rounding === value}
-                onChange={(e) =>
-                  setRounding(
-                    e.target.value
-                  )
-                }
+                onChange={(e) => setRounding(e.target.value)}
               />
 
               {label}
@@ -390,192 +459,149 @@ export default function FoodCalculator() {
         </div>
       </div>
 
-      <div className="space-y-2">
-        <p className="font-semibold">
-          Tax Rate
-        </p>
+      <button
+        className="w-full rounded-xl bg-orange-700 py-3 font-bold text-white hover:bg-orange-800"
+        onClick={handleSaveRecipe}
+      >
+        Save Recipe
+      </button>
 
-        <div className="flex flex-wrap gap-4">
-          {[
-            "0",
-            "6.25",
-            "7",
-            "8",
-            "8.5",
-            "10",
-            "custom",
-          ].map((value) => (
-            <label
-              key={value}
-              className="flex items-center gap-2"
-            >
-              <input
-                type="radio"
-                name="foodTaxRate"
-                value={value}
-                checked={
-                  value === "custom"
-                    ? ![
-                        "0",
-                        "6.25",
-                        "7",
-                        "8",
-                        "8.5",
-                        "10",
-                      ].includes(
-                        taxRate
-                      )
-                    : taxRate === value
-                }
-                onChange={() =>
-                  value === "custom"
-                    ? setTaxRate("")
-                    : setTaxRate(value)
-                }
-              />
+      <div className="space-y-3 rounded-xl bg-gray-100 p-4">
+        <h3 className="text-xl font-bold">Pricing Summary</h3>
 
-              {value === "custom"
-                ? "Custom"
-                : `${value}%`}
-            </label>
-          ))}
-        </div>
-
-        {![
-          "0",
-          "6.25",
-          "7",
-          "8",
-          "8.5",
-          "10",
-        ].includes(taxRate) ? (
-          <input
-            className="w-full border rounded-lg p-3"
-            placeholder="Custom tax rate %"
-            value={customTaxRate}
-            onChange={(e) =>
-              setCustomTaxRate(
-                e.target.value
-              )
-            }
-          />
-        ) : null}
-      </div>
-
-      {selectedTaxRate > 0 ? (
-        <div className="space-y-2">
-          <p className="font-semibold">
-            Tax Option
-          </p>
-
-          <div className="flex flex-wrap gap-4">
-            <label className="flex items-center gap-2">
-              <input
-                type="radio"
-                name="foodTaxMode"
-                value="include"
-                checked={
-                  taxMode === "include"
-                }
-                onChange={(e) =>
-                  setTaxMode(
-                    e.target.value
-                  )
-                }
-              />
-
-              Include Tax In Menu Price
-            </label>
-
-            <label className="flex items-center gap-2">
-              <input
-                type="radio"
-                name="foodTaxMode"
-                value="exclude"
-                checked={
-                  taxMode === "exclude"
-                }
-                onChange={(e) =>
-                  setTaxMode(
-                    e.target.value
-                  )
-                }
-              />
-
-              Do Not Include Tax In Menu Price
-            </label>
-          </div>
-        </div>
-      ) : null}
-
-      <div className="bg-gray-100 rounded-xl p-4 space-y-3">
-        <div className="bg-green-100 border border-green-300 rounded-xl p-4 text-center">
+        <div className="rounded-xl border border-green-300 bg-green-100 p-4 text-center">
           <p className="text-sm font-semibold text-green-800">
-            Menu Price
+            Recommended Selling Price
           </p>
 
           <p className="text-4xl font-bold text-green-900">
-            ${finalFoodPrice}
+            ${menuPrice.toFixed(2)}
           </p>
         </div>
 
         <p>
-          <strong>
-            Cost Per Portion:
-          </strong>{" "}
-          ${costPerPortion.toFixed(2)}
+          <strong>Ingredient Cost:</strong> ${ingredientCost.toFixed(2)}
         </p>
 
         <p>
-          <strong>
-            Total Batch Cost:
-          </strong>{" "}
-          ${Number(
-            batchCost || 0
-          ).toFixed(2)}
+          <strong>Additional Kitchen Cost:</strong> $
+          {additionalKitchenCostAmount.toFixed(2)}
         </p>
 
         <p>
-          <strong>Portions:</strong>{" "}
-          {selectedPortionCount.toFixed(0)}
+          <strong>Total Recipe Cost:</strong> ${totalRecipeCost.toFixed(2)}
         </p>
 
         <p>
-          <strong>
-            Pre-Tax Menu Price:
-          </strong>{" "}
-          ${menuPrice.toFixed(2)}
+          <strong>Profit:</strong> ${profit.toFixed(2)}
         </p>
 
         <p>
-          <strong>
-            Profit Per Portion:
-          </strong>{" "}
-          ${profit.toFixed(2)}
+          <strong>Profit Margin:</strong> {profitMargin.toFixed(1)}%
         </p>
 
         <p>
-          <strong>
-            Profit Margin:
-          </strong>{" "}
-          {profitMargin.toFixed(1)}%
+          <strong>Actual Food Cost:</strong> {actualFoodCost.toFixed(1)}%
         </p>
 
-        <p>
-          <strong>
-            Actual Food Cost Percentage:
-          </strong>{" "}
-          {actualFoodCostPercent.toFixed(
-            1
-          )}
-          %
-        </p>
-
-        <p>
-          <strong>Tax Rate:</strong>{" "}
-          {selectedTaxRate.toFixed(2)}%
-        </p>
+        {actualFoodCost > 35 ? (
+          <div className="rounded-xl border border-red-300 bg-red-100 p-3 text-sm font-semibold text-red-800">
+            Warning: This recipe may be priced too low for strong profitability.
+          </div>
+        ) : null}
       </div>
+
+      {showPantryReview ? (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+          <div className="max-h-[90vh] w-full max-w-lg overflow-y-auto rounded-2xl bg-white p-5 shadow-xl">
+            <h3 className="text-2xl font-bold">Review Pantry Items</h3>
+
+            <p className="mt-1 text-sm text-gray-500">
+              Before saving, confirm how these ingredients should connect to
+              your pantry.
+            </p>
+
+            <div className="mt-4 space-y-3">
+              {pantryReviewItems.map((item, index) => (
+                <div key={index} className="rounded-xl border bg-gray-50 p-3">
+                  <p className="font-bold">{item.enteredName}</p>
+
+                  {item.status === "matched" ? (
+                    <p className="text-sm text-green-700">
+                      Matched pantry item: {item.matchName}
+                    </p>
+                  ) : null}
+
+                  {item.status === "possible" ? (
+                    <p className="text-sm text-yellow-700">
+                      Possible match found: {item.matchName}
+                    </p>
+                  ) : null}
+
+                  {item.status === "new" ? (
+                    <p className="text-sm text-gray-600">
+                      This looks like a new pantry item.
+                    </p>
+                  ) : null}
+
+                  <div className="mt-3 grid gap-2">
+                    {item.matchName ? (
+                      <button
+                        className={`rounded-lg border p-2 text-sm font-semibold ${
+                          item.action === "useMatch"
+                            ? "bg-black text-white"
+                            : "bg-white"
+                        }`}
+                        onClick={() => updateReviewAction(index, "useMatch")}
+                      >
+                        Use {item.matchName}
+                      </button>
+                    ) : null}
+
+                    <button
+                      className={`rounded-lg border p-2 text-sm font-semibold ${
+                        item.action === "addNew"
+                          ? "bg-black text-white"
+                          : "bg-white"
+                      }`}
+                      onClick={() => updateReviewAction(index, "addNew")}
+                    >
+                      Add as New Pantry Item
+                    </button>
+
+                    <button
+                      className={`rounded-lg border p-2 text-sm font-semibold ${
+                        item.action === "skip"
+                          ? "bg-black text-white"
+                          : "bg-white"
+                      }`}
+                      onClick={() => updateReviewAction(index, "skip")}
+                    >
+                      Save Recipe Only
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            <div className="mt-5 grid grid-cols-2 gap-3">
+              <button
+                className="rounded-xl border py-3 font-bold"
+                onClick={() => setShowPantryReview(false)}
+              >
+                Cancel
+              </button>
+
+              <button
+                className="rounded-xl bg-orange-700 py-3 font-bold text-white hover:bg-orange-800"
+                onClick={confirmSaveRecipe}
+              >
+                Confirm Save
+              </button>
+            </div>
+          </div>
+        </div>
+      ) : null}
     </div>
   );
 }

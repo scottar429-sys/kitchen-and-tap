@@ -20,9 +20,6 @@ export default function LiquorCalculator() {
 
   const [rounding, setRounding] = useState("0.25");
 
-  const [taxRate, setTaxRate] = useState("0");
-  const [customTaxRate, setCustomTaxRate] = useState("");
-
   const referencePourSizes = [0.5, 0.75, 1, 1.25, 1.5, 2];
 
   function convertToOunces(size: number, unit: string) {
@@ -44,9 +41,6 @@ export default function LiquorCalculator() {
 
   const selectedPourSize =
     pourSize === "custom" ? Number(customPourSize || 0) : Number(pourSize);
-
-  const selectedTaxRate =
-    taxRate === "custom" ? Number(customTaxRate || 0) : Number(taxRate);
 
   const costPerOunce =
     Number(bottleCost || 0) > 0 && bottleOunces > 0
@@ -75,9 +69,6 @@ export default function LiquorCalculator() {
       roundToIncrement(calculatedPrice, Number(rounding))
     );
 
-    const estimatedGuestTotal =
-      selectedTaxRate > 0 ? menuPrice * (1 + selectedTaxRate / 100) : menuPrice;
-
     const profit = menuPrice - drinkCost;
     const profitMargin = menuPrice > 0 ? (profit / menuPrice) * 100 : 0;
     const actualCostPercent = menuPrice > 0 ? (drinkCost / menuPrice) * 100 : 0;
@@ -85,7 +76,6 @@ export default function LiquorCalculator() {
     return {
       drinkCost,
       menuPrice,
-      estimatedGuestTotal,
       profit,
       profitMargin,
       actualCostPercent,
@@ -354,44 +344,6 @@ export default function LiquorCalculator() {
         </div>
       </div>
 
-      <div className="space-y-2 border-t pt-4">
-        <p className="font-semibold">Optional Tax Reference</p>
-        <p className="text-xs text-gray-500">
-          Menu pricing is calculated before tax. Use this only to estimate what
-          the guest may pay after tax.
-        </p>
-
-        <div className="flex flex-wrap gap-4">
-          {["0", "6.25", "7", "8", "8.5", "10", "custom"].map((value) => (
-            <label key={value} className="flex items-center gap-2">
-              <input
-                type="radio"
-                name="liquorTaxRate"
-                value={value}
-                checked={
-                  value === "custom"
-                    ? !["0", "6.25", "7", "8", "8.5", "10"].includes(taxRate)
-                    : taxRate === value
-                }
-                onChange={() =>
-                  value === "custom" ? setTaxRate("") : setTaxRate(value)
-                }
-              />
-              {value === "custom" ? "Custom" : `${value}%`}
-            </label>
-          ))}
-        </div>
-
-        {!["0", "6.25", "7", "8", "8.5", "10"].includes(taxRate) ? (
-          <input
-            className="w-full border rounded-lg p-3"
-            placeholder="Custom tax rate %"
-            value={customTaxRate}
-            onChange={(e) => setCustomTaxRate(e.target.value)}
-          />
-        ) : null}
-      </div>
-
       <button className="w-full mt-6 bg-orange-700 hover:bg-orange-800 text-white font-bold py-3 rounded-xl">
         Save to Bar Back
       </button>
@@ -400,13 +352,13 @@ export default function LiquorCalculator() {
         <div>
           <h3 className="text-xl font-bold">Pricing Summary</h3>
           <p className="text-sm text-gray-500">
-            Review your recommended pre-tax pricing and profitability.
+            Review your recommended menu pricing and profitability.
           </p>
         </div>
 
         <div className="bg-green-100 border border-green-300 rounded-xl p-4 text-center">
           <p className="text-sm font-semibold text-green-800">
-            Menu Price Before Tax
+            Recommended Menu Price
           </p>
           <p className="text-4xl font-bold text-green-900">
             ${mainResult.menuPrice.toFixed(2)}
@@ -452,13 +404,6 @@ export default function LiquorCalculator() {
             Warning: This drink may have a low profit margin.
           </div>
         ) : null}
-
-        {selectedTaxRate > 0 ? (
-          <p>
-            <strong>Estimated Guest Total After Tax:</strong> $
-            {mainResult.estimatedGuestTotal.toFixed(2)}
-          </p>
-        ) : null}
       </div>
 
       <div className="bg-gray-100 rounded-xl p-4 space-y-3">
@@ -500,7 +445,7 @@ export default function LiquorCalculator() {
 
         <p className="text-xs text-gray-500 pt-2">
           Pricing estimates are based on bottle cost, pour size, and selected
-          pricing strategy. Menu prices are shown before tax.
+          pricing strategy.
         </p>
       </div>
     </div>
