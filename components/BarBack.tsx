@@ -32,7 +32,7 @@ const categoryFilters: CategoryFilter[] = [
   "All",
   "Liquor",
   "Wine",
-  "Beer",
+  "Draft Beer",
   "Cans/Bottles",
 ];
 

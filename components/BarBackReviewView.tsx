@@ -20,7 +20,7 @@ function money(value: number) {
 }
 
 function getUnitLabel(item: BarItem) {
-  if (item.category === "Beer") return "kegs";
+  if (item.category === "Draft Beer") return "kegs";
   if (item.category === "Cans/Bottles") return "cases";
   return "bottles";
 }
@@ -28,7 +28,7 @@ function getUnitLabel(item: BarItem) {
 function getTargetCostPercent(item: BarItem) {
   if (item.category === "Liquor") return 22;
   if (item.category === "Wine") return 32;
-  if (item.category === "Beer") return 22;
+  if (item.category === "Draft Beer") return 22;
   if (item.category === "Cans/Bottles") return 28;
   return 25;
 }
