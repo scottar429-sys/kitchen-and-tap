@@ -7,7 +7,7 @@ export type BarView =
 export type BarCategory =
   | "Liquor"
   | "Wine"
-  | "Draft Beer"
+  | "Beer"
   | "Cans/Bottles";
 
 export type CategoryFilter =
@@ -27,33 +27,12 @@ export type SortMode =
   | "Highest Cost %"
   | "Alphabetical";
 
-export type VendorStatus = "active" | "inactive";
-
-export type OrderUnit =
-  | "single"
-  | "bottle"
-  | "case"
-  | "keg"
-  | "custom";
-
 export type BarItem = {
   id: number;
 
   productName: string;
 
   category: BarCategory;
-
-  vendorId?: string;
-
-  vendorName?: string;
-
-  vendorStatus?: VendorStatus;
-
-  vendorOrderDays?: string[];
-
-  orderUnit?: OrderUnit;
-
-  caseSize?: number;
 
   bottleCost: number;
 

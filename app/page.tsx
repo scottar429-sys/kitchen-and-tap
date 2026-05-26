@@ -10,9 +10,22 @@ import PackagedCalculator from "../components/PackagedCalculator";
 import FoodCalculator from "../components/FoodCalculator";
 import BarBack from "@/components/BarBack";
 import Pantry from "@/components/Pantry";
+import Vendors from "@/components/Vendors";
+import Dashboard from "@/components/Dashboard";
+
+type ActivePage =
+  | "home"
+  | "about"
+  | "calculators"
+  | "dashboard"
+  | "barback"
+  | "pantry"
+  | "vendors"
+  | "disclaimers"
+  | "login";
 
 export default function Home() {
-  const [activePage, setActivePage] = useState("home");
+  const [activePage, setActivePage] = useState<ActivePage>("home");
   const [calculatorType, setCalculatorType] = useState("liquor");
 
   function showCalculator(type: string) {
@@ -82,6 +95,17 @@ export default function Home() {
             </select>
 
             <button
+              onClick={() => setActivePage("dashboard")}
+              className={`px-3 py-2 rounded-lg ${
+                activePage === "dashboard"
+                  ? "bg-orange-100 text-orange-800"
+                  : "hover:bg-gray-100"
+              }`}
+            >
+              Dashboard 🔒
+            </button>
+
+            <button
               onClick={() => setActivePage("barback")}
               className={`px-3 py-2 rounded-lg ${
                 activePage === "barback"
@@ -101,6 +125,17 @@ export default function Home() {
               }`}
             >
               Pantry 🔒
+            </button>
+
+            <button
+              onClick={() => setActivePage("vendors")}
+              className={`px-3 py-2 rounded-lg ${
+                activePage === "vendors"
+                  ? "bg-orange-100 text-orange-800"
+                  : "hover:bg-gray-100"
+              }`}
+            >
+              Vendors 🔒
             </button>
 
             <button
@@ -165,6 +200,13 @@ export default function Home() {
                 </button>
 
                 <button
+                  onClick={() => setActivePage("dashboard")}
+                  className="px-5 py-3 rounded-xl bg-white border font-semibold hover:bg-gray-50"
+                >
+                  View Dashboard 🔒
+                </button>
+
+                <button
                   onClick={() => setActivePage("about")}
                   className="px-5 py-3 rounded-xl bg-white border font-semibold hover:bg-gray-50"
                 >
@@ -195,7 +237,7 @@ export default function Home() {
               <h3 className="text-xl font-bold">Pro Features Coming</h3>
               <p className="mt-3 text-gray-600">
                 Save items, update costs, manage Bar Back and Pantry, build
-                dashboards, and track reports.
+                dashboards, vendors, order sheets, and reports.
               </p>
             </div>
           </div>
@@ -222,7 +264,8 @@ export default function Home() {
             <p className="text-gray-700 leading-7">
               The free version gives operators fast manual calculators. Future
               Pro versions will support saved products, Pantry inventory, Bar
-              Back tools, recipe costing, reporting, and setup services.
+              Back tools, vendors, recipe costing, reporting, dashboards, and
+              setup services.
             </p>
           </div>
         </section>
@@ -245,6 +288,14 @@ export default function Home() {
         </section>
       ) : null}
 
+      {activePage === "dashboard" ? (
+        <section className="px-6 py-8">
+          <div className="max-w-6xl mx-auto">
+            <Dashboard />
+          </div>
+        </section>
+      ) : null}
+
       {activePage === "barback" ? (
         <section className="px-6 py-8">
           <div className="max-w-6xl mx-auto">
@@ -257,6 +308,14 @@ export default function Home() {
         <section className="px-6 py-8">
           <div className="max-w-6xl mx-auto">
             <Pantry />
+          </div>
+        </section>
+      ) : null}
+
+      {activePage === "vendors" ? (
+        <section className="px-6 py-8">
+          <div className="max-w-6xl mx-auto">
+            <Vendors />
           </div>
         </section>
       ) : null}
@@ -345,8 +404,9 @@ export default function Home() {
             </h3>
             <p className="mt-2 leading-6">
               Coming features include saved items, Bar Back tools, Pantry
-              inventory, recipe costing, reports, dashboards, and paid Pro
-              features for operators who want to save and manage their data.
+              inventory, vendor management, order sheets, recipe costing,
+              reports, dashboards, and paid Pro features for operators who want
+              to save and manage their data.
             </p>
           </div>
         </div>
