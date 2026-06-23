@@ -1,8 +1,10 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import Image from "next/image";
+import type { User } from "@supabase/supabase-js";
 
+import LoginBox from "@/components/LoginBox";
 import LiquorCalculator from "../components/LiquorCalculator";
 import DraftAlcoholCalculator from "../components/DraftAlcoholCalculator";
 import WineCalculator from "../components/WineCalculator";
@@ -12,26 +14,203 @@ import BarBack from "@/components/BarBack";
 import Pantry from "@/components/Pantry";
 import Vendors from "@/components/Vendors";
 import Dashboard from "@/components/Dashboard";
+import Pricing from "@/components/Pricing";
+import BackOfHouse from "@/components/BackOfHouse";
+import { supabase } from "@/lib/supabaseClient";
 
 type ActivePage =
   | "home"
   | "about"
+  | "pricing"
   | "calculators"
   | "dashboard"
   | "barback"
   | "pantry"
   | "vendors"
+  | "backofhouse"
   | "disclaimers"
   | "login";
+
+type SubscriptionPlan = "free" | "barback" | "pantry" | "combined" | "admin";
+
+type SubscriptionStatus =
+  | "trialing"
+  | "active"
+  | "past_due"
+  | "canceled"
+  | "inactive";
+
+type AccountAccess = {
+  accountId: string | null;
+  subscriptionPlan: SubscriptionPlan;
+  subscriptionStatus: SubscriptionStatus;
+};
+
+const defaultAccountAccess: AccountAccess = {
+  accountId: null,
+  subscriptionPlan: "free",
+  subscriptionStatus: "inactive",
+};
+
+const privatePages: ActivePage[] = [
+  "dashboard",
+  "barback",
+  "pantry",
+  "vendors",
+  "backofhouse",
+];
 
 export default function Home() {
   const [activePage, setActivePage] = useState<ActivePage>("home");
   const [calculatorType, setCalculatorType] = useState("liquor");
+  const [user, setUser] = useState<User | null>(null);
+  const [accountAccess, setAccountAccess] =
+    useState<AccountAccess>(defaultAccountAccess);
+  const [loadingAccount, setLoadingAccount] = useState(true);
+
+  const isLoggedIn = !!user;
+
+  const hasActiveSubscription =
+    accountAccess.subscriptionStatus === "active" ||
+    accountAccess.subscriptionStatus === "trialing";
+
+  const isAdmin = accountAccess.subscriptionPlan === "admin";
+
+  const hasDashboardAccess = isLoggedIn && hasActiveSubscription;
+
+  const hasBarBackAccess =
+    isLoggedIn &&
+    hasActiveSubscription &&
+    (isAdmin ||
+      accountAccess.subscriptionPlan === "barback" ||
+      accountAccess.subscriptionPlan === "combined");
+
+  const hasPantryAccess =
+    isLoggedIn &&
+    hasActiveSubscription &&
+    (isAdmin ||
+      accountAccess.subscriptionPlan === "pantry" ||
+      accountAccess.subscriptionPlan === "combined");
+
+  const hasVendorAccess =
+    isLoggedIn &&
+    hasActiveSubscription &&
+    (isAdmin || hasBarBackAccess || hasPantryAccess);
+
+  const hasBackOfHouseAccess = isLoggedIn;
+
+  const showDashboard = hasDashboardAccess;
+  const showVendors = hasVendorAccess;
+
+  const canSeeCurrentPage = useMemo(() => {
+    if (!privatePages.includes(activePage)) return true;
+    if (activePage === "dashboard") return showDashboard;
+    if (activePage === "barback") return hasBarBackAccess;
+    if (activePage === "pantry") return hasPantryAccess;
+    if (activePage === "vendors") return showVendors;
+    if (activePage === "backofhouse") return hasBackOfHouseAccess;
+    return true;
+  }, [
+    activePage,
+    showDashboard,
+    hasBarBackAccess,
+    hasPantryAccess,
+    showVendors,
+    hasBackOfHouseAccess,
+  ]);
+
+  useEffect(() => {
+    let mounted = true;
+
+    async function loadUserAndAccount() {
+      setLoadingAccount(true);
+
+      const {
+        data: { user: currentUser },
+      } = await supabase.auth.getUser();
+
+      if (!mounted) return;
+
+      setUser(currentUser);
+
+      if (!currentUser) {
+        setAccountAccess(defaultAccountAccess);
+        setLoadingAccount(false);
+        return;
+      }
+
+      const { data, error } = await supabase
+        .from("account_members")
+        .select(
+          `
+          account_id,
+          accounts (
+            subscription_plan,
+            subscription_status
+          )
+        `,
+        )
+        .eq("user_id", currentUser.id)
+        .eq("is_active", true)
+        .limit(1)
+        .maybeSingle();
+
+      if (!mounted) return;
+
+      if (error || !data?.accounts) {
+        setAccountAccess(defaultAccountAccess);
+        setLoadingAccount(false);
+        return;
+      }
+
+      const account = Array.isArray(data.accounts)
+        ? data.accounts[0]
+        : data.accounts;
+
+      setAccountAccess({
+        accountId: data.account_id ?? null,
+        subscriptionPlan:
+          (account?.subscription_plan as SubscriptionPlan | null) ?? "free",
+        subscriptionStatus:
+          (account?.subscription_status as SubscriptionStatus | null) ??
+          "inactive",
+      });
+
+      setLoadingAccount(false);
+    }
+
+    loadUserAndAccount();
+
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange(() => {
+      loadUserAndAccount();
+    });
+
+    return () => {
+      mounted = false;
+      subscription.unsubscribe();
+    };
+  }, []);
+
+  useEffect(() => {
+    if (!loadingAccount && !canSeeCurrentPage) {
+      setActivePage(isLoggedIn ? "dashboard" : "home");
+    }
+  }, [canSeeCurrentPage, isLoggedIn, loadingAccount]);
 
   function showCalculator(type: string) {
     if (!type) return;
     setCalculatorType(type);
     setActivePage("calculators");
+  }
+
+  function navButtonClass(page: ActivePage) {
+    return `px-3 py-2 rounded-lg ${
+      activePage === page
+        ? "bg-orange-100 text-orange-800"
+        : "hover:bg-gray-100"
+    }`;
   }
 
   return (
@@ -61,25 +240,26 @@ export default function Home() {
           <nav className="flex flex-wrap items-center gap-2 text-sm font-medium">
             <button
               onClick={() => setActivePage("home")}
-              className={`px-3 py-2 rounded-lg ${
-                activePage === "home"
-                  ? "bg-orange-100 text-orange-800"
-                  : "hover:bg-gray-100"
-              }`}
+              className={navButtonClass("home")}
             >
               Home
             </button>
 
             <button
               onClick={() => setActivePage("about")}
-              className={`px-3 py-2 rounded-lg ${
-                activePage === "about"
-                  ? "bg-orange-100 text-orange-800"
-                  : "hover:bg-gray-100"
-              }`}
+              className={navButtonClass("about")}
             >
               About
             </button>
+
+            {!isLoggedIn ? (
+              <button
+                onClick={() => setActivePage("pricing")}
+                className={navButtonClass("pricing")}
+              >
+                Pricing
+              </button>
+            ) : null}
 
             <select
               value={activePage === "calculators" ? calculatorType : ""}
@@ -94,66 +274,67 @@ export default function Home() {
               <option value="food">Food Calculator</option>
             </select>
 
-            <button
-              onClick={() => setActivePage("dashboard")}
-              className={`px-3 py-2 rounded-lg ${
-                activePage === "dashboard"
-                  ? "bg-orange-100 text-orange-800"
-                  : "hover:bg-gray-100"
-              }`}
-            >
-              Dashboard 🔒
-            </button>
+            {showDashboard ? (
+              <button
+                onClick={() => setActivePage("dashboard")}
+                className={navButtonClass("dashboard")}
+              >
+                Dashboard
+              </button>
+            ) : null}
 
-            <button
-              onClick={() => setActivePage("barback")}
-              className={`px-3 py-2 rounded-lg ${
-                activePage === "barback"
-                  ? "bg-orange-100 text-orange-800"
-                  : "hover:bg-gray-100"
-              }`}
-            >
-              Bar Back 🔒
-            </button>
+            {hasBarBackAccess ? (
+              <button
+                onClick={() => setActivePage("barback")}
+                className={navButtonClass("barback")}
+              >
+                Bar Back
+              </button>
+            ) : null}
 
-            <button
-              onClick={() => setActivePage("pantry")}
-              className={`px-3 py-2 rounded-lg ${
-                activePage === "pantry"
-                  ? "bg-orange-100 text-orange-800"
-                  : "hover:bg-gray-100"
-              }`}
-            >
-              Pantry 🔒
-            </button>
+            {hasPantryAccess ? (
+              <button
+                onClick={() => setActivePage("pantry")}
+                className={navButtonClass("pantry")}
+              >
+                Pantry
+              </button>
+            ) : null}
 
-            <button
-              onClick={() => setActivePage("vendors")}
-              className={`px-3 py-2 rounded-lg ${
-                activePage === "vendors"
-                  ? "bg-orange-100 text-orange-800"
-                  : "hover:bg-gray-100"
-              }`}
-            >
-              Vendors 🔒
-            </button>
+            {showVendors ? (
+              <button
+                onClick={() => setActivePage("vendors")}
+                className={navButtonClass("vendors")}
+              >
+                Vendors
+              </button>
+            ) : null}
+
+            {hasBackOfHouseAccess ? (
+              <button
+                onClick={() => setActivePage("backofhouse")}
+                className={navButtonClass("backofhouse")}
+              >
+                Back of House
+              </button>
+            ) : null}
 
             <button
               onClick={() => setActivePage("disclaimers")}
-              className={`px-3 py-2 rounded-lg ${
-                activePage === "disclaimers"
-                  ? "bg-orange-100 text-orange-800"
-                  : "hover:bg-gray-100"
-              }`}
+              className={navButtonClass("disclaimers")}
             >
               Disclaimers
             </button>
 
             <button
               onClick={() => setActivePage("login")}
-              className="px-4 py-2 rounded-lg bg-orange-700 text-white hover:bg-orange-800"
+              className={`px-4 py-2 rounded-lg ${
+                activePage === "login"
+                  ? "bg-orange-800 text-white"
+                  : "bg-orange-700 text-white hover:bg-orange-800"
+              }`}
             >
-              Login
+              {isLoggedIn ? "Account" : "Login"}
             </button>
           </nav>
         </div>
@@ -199,12 +380,21 @@ export default function Home() {
                   Try the Calculators
                 </button>
 
-                <button
-                  onClick={() => setActivePage("dashboard")}
-                  className="px-5 py-3 rounded-xl bg-white border font-semibold hover:bg-gray-50"
-                >
-                  View Dashboard 🔒
-                </button>
+                {isLoggedIn ? (
+                  <button
+                    onClick={() => setActivePage("dashboard")}
+                    className="px-5 py-3 rounded-xl bg-white border font-semibold hover:bg-gray-50"
+                  >
+                    View Dashboard
+                  </button>
+                ) : (
+                  <button
+                    onClick={() => setActivePage("pricing")}
+                    className="px-5 py-3 rounded-xl bg-white border font-semibold hover:bg-gray-50"
+                  >
+                    View Pricing
+                  </button>
+                )}
 
                 <button
                   onClick={() => setActivePage("about")}
@@ -213,32 +403,6 @@ export default function Home() {
                   About Kitchen & Tap
                 </button>
               </div>
-            </div>
-          </div>
-
-          <div className="max-w-6xl mx-auto mt-14 grid gap-5 md:grid-cols-3">
-            <div className="bg-white rounded-2xl shadow p-6">
-              <h3 className="text-xl font-bold">Bar Tools</h3>
-              <p className="mt-3 text-gray-600">
-                Liquor, draft alcohol, wine, packaged beverage pricing, and Bar
-                Back inventory tools built for real-world bar operations.
-              </p>
-            </div>
-
-            <div className="bg-white rounded-2xl shadow p-6">
-              <h3 className="text-xl font-bold">Kitchen Tools</h3>
-              <p className="mt-3 text-gray-600">
-                Food costing, portion pricing, Pantry inventory, suggested
-                ordering, and menu pricing tools.
-              </p>
-            </div>
-
-            <div className="bg-white rounded-2xl shadow p-6">
-              <h3 className="text-xl font-bold">Pro Features Coming</h3>
-              <p className="mt-3 text-gray-600">
-                Save items, update costs, manage Bar Back and Pantry, build
-                dashboards, vendors, order sheets, and reports.
-              </p>
             </div>
           </div>
         </section>
@@ -262,11 +426,19 @@ export default function Home() {
             </p>
 
             <p className="text-gray-700 leading-7">
-              The free version gives operators fast manual calculators. Future
-              Pro versions will support saved products, Pantry inventory, Bar
-              Back tools, vendors, recipe costing, reporting, dashboards, and
-              setup services.
+              The free version gives operators fast manual calculators. Pro
+              versions support saved products, Pantry inventory, Bar Back tools,
+              vendors, recipe costing, reporting, dashboards, and setup
+              services.
             </p>
+          </div>
+        </section>
+      ) : null}
+
+      {activePage === "pricing" && !isLoggedIn ? (
+        <section className="px-6 py-8">
+          <div className="max-w-6xl mx-auto">
+            <Pricing />
           </div>
         </section>
       ) : null}
@@ -288,7 +460,7 @@ export default function Home() {
         </section>
       ) : null}
 
-      {activePage === "dashboard" ? (
+      {activePage === "dashboard" && showDashboard ? (
         <section className="px-6 py-8">
           <div className="max-w-6xl mx-auto">
             <Dashboard />
@@ -296,7 +468,7 @@ export default function Home() {
         </section>
       ) : null}
 
-      {activePage === "barback" ? (
+      {activePage === "barback" && hasBarBackAccess ? (
         <section className="px-6 py-8">
           <div className="max-w-6xl mx-auto">
             <BarBack />
@@ -304,7 +476,7 @@ export default function Home() {
         </section>
       ) : null}
 
-      {activePage === "pantry" ? (
+      {activePage === "pantry" && hasPantryAccess ? (
         <section className="px-6 py-8">
           <div className="max-w-6xl mx-auto">
             <Pantry />
@@ -312,10 +484,18 @@ export default function Home() {
         </section>
       ) : null}
 
-      {activePage === "vendors" ? (
+      {activePage === "vendors" && showVendors ? (
         <section className="px-6 py-8">
           <div className="max-w-6xl mx-auto">
             <Vendors />
+          </div>
+        </section>
+      ) : null}
+
+      {activePage === "backofhouse" && hasBackOfHouseAccess ? (
+        <section className="px-6 py-8">
+          <div className="max-w-6xl mx-auto">
+            <BackOfHouse />
           </div>
         </section>
       ) : null}
@@ -348,33 +528,27 @@ export default function Home() {
 
       {activePage === "login" ? (
         <section className="px-6 py-12">
-          <div className="max-w-md mx-auto bg-white rounded-2xl shadow p-8 space-y-5">
-            <h1 className="text-3xl font-bold">Login</h1>
-
-            <p className="text-gray-600">
-              User accounts and paid Pro features are coming soon.
-            </p>
-
-            <input
-              className="w-full border rounded-lg p-3"
-              placeholder="Email"
-              disabled
-            />
-
-            <input
-              className="w-full border rounded-lg p-3"
-              placeholder="Password"
-              type="password"
-              disabled
-            />
-
-            <button
-              disabled
-              className="w-full px-4 py-3 rounded-xl bg-gray-300 text-gray-600 font-semibold"
-            >
-              Login Coming Soon
-            </button>
+          <div className="max-w-md mx-auto">
+            <LoginBox />
           </div>
+
+          {isLoggedIn ? (
+            <div className="max-w-md mx-auto mt-4 bg-white rounded-2xl shadow p-5 text-sm text-gray-700">
+              <p className="font-semibold text-gray-900">Current access</p>
+              <p className="mt-2">
+                Plan:{" "}
+                <span className="font-semibold capitalize">
+                  {accountAccess.subscriptionPlan}
+                </span>
+              </p>
+              <p>
+                Status:{" "}
+                <span className="font-semibold capitalize">
+                  {accountAccess.subscriptionStatus.replace("_", " ")}
+                </span>
+              </p>
+            </div>
+          ) : null}
         </section>
       ) : null}
 

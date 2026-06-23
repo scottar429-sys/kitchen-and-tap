@@ -7,9 +7,10 @@ import { startingItems } from "./mockBarBackData";
 
 import BarBackInventory from "./BarBackInventory";
 import BarBackReviewView from "./BarBackReviewView";
+import BarBackMixologist from "./BarBackMixologist";
 import BarBackBulkSetup from "./BarBackBulkSetup";
 
-type ActiveView = "inventory" | "review";
+type ActiveView = "inventory" | "review" | "mixologist";
 
 type QuickFilter =
   | "all"
@@ -119,6 +120,7 @@ export default function BarBack() {
   const sortOptionsByView: Record<ActiveView, BarBackSortMode[]> = {
     inventory: inventorySortOptions,
     review: reviewSortOptions,
+    mixologist: inventorySortOptions,
   };
 
   const sortOptions = useMemo(() => {
@@ -302,7 +304,7 @@ export default function BarBack() {
 
         <p className="text-gray-600">
           Manage manual counts, suggested ordering, event ordering, vendor sorting,
-          target stock levels, quarterly pricing reviews, and bulk setup.
+          target stock levels, quarterly pricing reviews, cocktail pricing, and bulk setup.
         </p>
       </div>
 
@@ -345,10 +347,11 @@ export default function BarBack() {
       </div>
 
       <div className="space-y-3 rounded-2xl bg-white p-3 shadow">
-        <div className="grid grid-cols-2 gap-2">
+        <div className="grid grid-cols-3 gap-2">
           {[
             ["inventory", "Inventory"],
             ["review", "Quarterly Review"],
+            ["mixologist", "Mixologist"],
           ].map(([view, label]) => (
             <button
               key={view}
@@ -364,71 +367,82 @@ export default function BarBack() {
           ))}
         </div>
 
-        <div className="flex gap-2 overflow-x-auto pb-1">
-          {quickFilters.map((filter) => (
-            <button
-              key={filter.value}
-              onClick={() => setQuickFilter(filter.value)}
-              className={`whitespace-nowrap rounded-xl px-3 py-2 text-xs font-bold ${
-                quickFilter === filter.value
-                  ? "border border-orange-300 bg-orange-100 text-orange-800"
-                  : "bg-gray-100 text-gray-700"
-              }`}
-            >
-              {filter.label}
-            </button>
-          ))}
-        </div>
+        {activeView !== "mixologist" ? (
+          <>
+            <div className="flex gap-2 overflow-x-auto pb-1">
+              {quickFilters.map((filter) => (
+                <button
+                  key={filter.value}
+                  onClick={() => setQuickFilter(filter.value)}
+                  className={`whitespace-nowrap rounded-xl px-3 py-2 text-xs font-bold ${
+                    quickFilter === filter.value
+                      ? "border border-orange-300 bg-orange-100 text-orange-800"
+                      : "bg-gray-100 text-gray-700"
+                  }`}
+                >
+                  {filter.label}
+                </button>
+              ))}
+            </div>
 
-        <div className="flex gap-2 overflow-x-auto pb-1">
-          {categoryFilters.map((filter) => (
-            <button
-              key={filter}
-              onClick={() => setActiveCategory(filter)}
-              className={`whitespace-nowrap rounded-xl px-3 py-2 text-xs font-bold ${
-                activeCategory === filter
-                  ? "border border-orange-300 bg-orange-100 text-orange-800"
-                  : "bg-gray-100 text-gray-700"
-              }`}
-            >
-              {filter}
-            </button>
-          ))}
-        </div>
+            <div className="flex gap-2 overflow-x-auto pb-1">
+              {categoryFilters.map((filter) => (
+                <button
+                  key={filter}
+                  onClick={() => setActiveCategory(filter)}
+                  className={`whitespace-nowrap rounded-xl px-3 py-2 text-xs font-bold ${
+                    activeCategory === filter
+                      ? "border border-orange-300 bg-orange-100 text-orange-800"
+                      : "bg-gray-100 text-gray-700"
+                  }`}
+                >
+                  {filter}
+                </button>
+              ))}
+            </div>
+          </>
+        ) : (
+          <div className="rounded-xl border border-orange-200 bg-orange-50 p-3 text-sm text-orange-900">
+            Cocktail pricing uses the bottle costs saved in Quarterly Review, so
+            users do not need to enter ingredient prices again.
+          </div>
+        )}
       </div>
 
-      <div className="grid gap-3 md:grid-cols-[1fr_220px_260px]">
-        <input
-          className="w-full rounded-xl border bg-white p-3"
-          placeholder="Search products..."
-          value={search}
-          onChange={(event) => setSearch(event.target.value)}
-        />
+      {activeView !== "mixologist" ? (
+        <div className="grid gap-3 md:grid-cols-[1fr_220px_260px]">
+          <input
+            className="w-full rounded-xl border bg-white p-3"
+            placeholder="Search products..."
+            value={search}
+            onChange={(event) => setSearch(event.target.value)}
+          />
 
-        <select
-          value={vendorFilter}
-          onChange={(event) => setVendorFilter(event.target.value)}
-          className="w-full rounded-xl border bg-white p-3"
-        >
-          {vendorOptions.map((vendor) => (
-            <option key={vendor} value={vendor}>
-              {vendor}
-            </option>
-          ))}
-        </select>
+          <select
+            value={vendorFilter}
+            onChange={(event) => setVendorFilter(event.target.value)}
+            className="w-full rounded-xl border bg-white p-3"
+          >
+            {vendorOptions.map((vendor) => (
+              <option key={vendor} value={vendor}>
+                {vendor}
+              </option>
+            ))}
+          </select>
 
-        <select
-          value={sortMode}
-          onChange={(event) => setSortMode(event.target.value as BarBackSortMode)}
-          className="w-full rounded-xl border bg-white p-3"
-        >
-          {sortOptions.map((option) => (
-            <option key={option} value={option}>
-              Sort: {option}
-            </option>
-          ))}
-        </select>
-      </div>
+          <select
+            value={sortMode}
+            onChange={(event) => setSortMode(event.target.value as BarBackSortMode)}
+            className="w-full rounded-xl border bg-white p-3"
+          >
+            {sortOptions.map((option) => (
+              <option key={option} value={option}>
+                Sort: {option}
+              </option>
+            ))}
+          </select>
+        </div>
+      ) : null}
 
       {activeView === "inventory" ? (
         <BarBackInventory
@@ -450,6 +464,10 @@ export default function BarBack() {
           openCalculatorForItem={openCalculatorForItem}
           vendorOptions={vendorOptions}
         />
+      ) : null}
+
+      {activeView === "mixologist" ? (
+        <BarBackMixologist barItems={items} />
       ) : null}
 
       <div className="border-t pt-6">
