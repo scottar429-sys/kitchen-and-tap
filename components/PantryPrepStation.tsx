@@ -445,7 +445,7 @@ export default function PantryPrepStation({
         existingIngredients.length > 0
           ? Math.max(...existingIngredients.map((ingredient) => ingredient.id)) + 1
           : 1,
-      source: "pantry",
+      source: "pantry", IngredientSource,
       pantryItemId: firstPantryItem.id,
       amount: 1,
       unit: (firstPantryItem.caseUnit as RecipeUnit) || "each",
@@ -529,7 +529,7 @@ export default function PantryPrepStation({
               ...ingredient,
               pantryItemId: Number(value),
               recipeId: undefined,
-              source: "pantry",
+              source: "pantry", as IngredientSource,
               unit: (selectedPantryItem?.caseUnit as RecipeUnit) || ingredient.unit || "each",
             };
           }
@@ -540,7 +540,7 @@ export default function PantryPrepStation({
               ...ingredient,
               recipeId: Number(value),
               pantryItemId: undefined,
-              source: "recipe",
+              source: "recipe", as IngredientSource, 
               unit: selectedRecipe?.yieldUnit || ingredient.unit || "portion",
             };
           }
