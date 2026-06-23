@@ -445,7 +445,7 @@ export default function PantryPrepStation({
         existingIngredients.length > 0
           ? Math.max(...existingIngredients.map((ingredient) => ingredient.id)) + 1
           : 1,
-      source: "pantry" IngredientSource,
+      source: "pantry" as IngredientSource,
       pantryItemId: firstPantryItem.id,
       amount: 1,
       unit: (firstPantryItem.caseUnit as RecipeUnit) || "each",
